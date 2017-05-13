@@ -1,0 +1,35 @@
+{
+  "manifest_version": 2,
+
+  "name": "InfiTwitch",
+  "description": "Your mom :)",
+  "version": "0.0.1",
+
+  "browser_action": {
+    "default_icon": "assets/twitch.png",
+    "default_popup": "src/popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "https://www.twitch.tv/*",
+    "storage"
+  ],
+  "background": {
+    "scripts": [
+      "lib/jquery.js",
+      "src/background.js"
+    ],
+    "persistent": true
+  },
+  "content_scripts": [
+    {
+      "run_at" : "document_end",
+      "matches": ["https://www.twitch.tv/*"],
+      "js": [
+        "lib/simulacra.js",
+        "lib/jquery.js",
+        "src/twitch.js"
+      ]
+    }
+  ]
+}
