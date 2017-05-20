@@ -108,6 +108,7 @@ function getUserSettings() {
 }
 
 function setDefaultSettings() {
+    userData.settings.priorityList = [];
     for (let id in userData.follows) {
         userData.settings.priorityList.push(id);
     }
