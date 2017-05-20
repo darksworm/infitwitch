@@ -17,24 +17,56 @@ let appData = {
 chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     switch (msg.type) {
         case "userData":
-            onUserDataReceived(msg.data);
+            onUserDataReceived(msg.data).then(updateLiveFollowedStreams);
+            break;
+        case "isStarted":
+            sendResponse(appData.started);
             break;
         case "getNextStream":
-            updateLiveFollowedStreams().then(() => sendResponse(userData.follows[userData.settings.priorityList[0]]));
+            updateLiveFollowedStreams().then(() => {
+                for (let i in userData.settings.priorityList) {
+                    let p = userData.settings.priorityList[i];
+                    if (userData.follows[p].live) {
+                        appData.currentStream = userData.follows[p];
+                        appData.started = true;
+                        sendResponse(appData.currentStream);
+                        return;
+                    }
+                }
+                sendResponse(null);
+            });
+            break;
+        case "streamOffline":
+            updateLiveFollowedStreams().then(() => {
+                for(let i in userData.follows) {
+                    if(userData.follows[i].name == msg.data) {
+                        userData.follows[i].live = false;
+                    }
+                }
+                sendResponse(true);
+            });
             break;
     }
+    return true;
 });
 
 function onUserDataReceived(user) {
-    userData.id = user.id;
-    userData.login = user.login;
-    getFollows().then(() => getUserSettings().then(() => updateLiveFollowedStreams()));
+    return new Promise((resolve, reject) => {
+        userData.id = user.id;
+        userData.login = user.login;
+        getFollows()
+            .then(() => getUserSettings()
+                .then(() => updateLiveFollowedStreams()
+                    .then(() => resolve(true))
+                )
+            );
+    });
 }
 
 function updateLiveFollowedStreams() {
     let implodedStreams = '';
 
-    for(let id in userData.follows){
+    for (let id in userData.follows) {
         implodedStreams += userData.follows[id].name + ',';
     }
     implodedStreams.slice(0, -1);
@@ -51,6 +83,7 @@ function updateLiveFollowedStreams() {
             timeout: 30000,
             success: (data) => {
                 addLiveFollowedStreams(data.streams);
+                console.log("GOT STREAMS");
                 resolve();
             },
             error: ({status, responseJSON}) => reject({
@@ -75,7 +108,6 @@ function getUserSettings() {
 }
 
 function setDefaultSettings() {
-    userData.settings.priorityList = [userData.id.toString(), "31725534"];
     for (let id in userData.follows) {
         userData.settings.priorityList.push(id);
     }
@@ -102,7 +134,7 @@ function addLiveFollowedStreams(streams) {
     for (let stream of streams) {
         userData.follows[stream.channel._id].live = true;
     }
-    console.log(userData);
+    console.log("ADDED STREAMS");
 }
 
 function addFollows(follows) {
