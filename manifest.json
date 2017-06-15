@@ -7,12 +7,13 @@
 
   "browser_action": {
     "default_icon": "assets/twitch.png",
-    "default_popup": "src/popup.html"
+    "default_title": "Open settings"
   },
   "permissions": [
     "activeTab",
     "https://www.twitch.tv/*",
-    "storage"
+    "storage",
+    "tabs"
   ],
   "background": {
     "scripts": [

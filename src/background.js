@@ -9,23 +9,38 @@ let userData = {
     }
 };
 
+const FOLLOW_REQ_QUERY_LIMIT = 100;
+
 let appData = {
     currentStream: null,
     started: false
 };
 
+chrome.browserAction.onClicked.addListener(function () {
+    chrome.tabs.create({'url': chrome.extension.getURL('src/settings.html')}, function (tab) {
+
+    });
+});
+
 chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     switch (msg.type) {
         case "userData":
-            onUserDataReceived(msg.data).then(updateLiveFollowedStreams);
+            onUserDataReceived(msg.data, true);
+            break;
+        case "setUserSettings":
+            setUserSettings(msg.data);
             break;
         case "isStarted":
             sendResponse(appData.started);
+            break;
+        case "getUserData":
+            sendResponse(userData);
             break;
         case "getNextStream":
             updateLiveFollowedStreams().then(() => {
                 for (let i in userData.settings.priorityList) {
                     let p = userData.settings.priorityList[i];
+                    console.log(userData.follows[p]);
                     if (userData.follows[p].live) {
                         appData.currentStream = userData.follows[p];
                         appData.started = true;
@@ -38,8 +53,8 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
             break;
         case "streamOffline":
             updateLiveFollowedStreams().then(() => {
-                for(let i in userData.follows) {
-                    if(userData.follows[i].name == msg.data) {
+                for (let i in userData.follows) {
+                    if (userData.follows[i].name === msg.data) {
                         userData.follows[i].live = false;
                     }
                 }
@@ -50,15 +65,13 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     return true;
 });
 
-function onUserDataReceived(user) {
+function onUserDataReceived(user, updateLive) {
     return new Promise((resolve, reject) => {
         userData.id = user.id;
         userData.login = user.login;
         getFollows()
             .then(() => getUserSettings()
-                .then(() => updateLiveFollowedStreams()
-                    .then(() => resolve(true))
-                )
+                .then(() => updateLive ? updateLiveFollowedStreams().then(() => resolve(true)) : resolve(true))
             );
     });
 }
@@ -92,6 +105,10 @@ function updateLiveFollowedStreams() {
             })
         })
     );
+}
+
+function setUserSettings(settings) {
+    userData.settings = settings;
 }
 
 function getUserSettings() {
@@ -149,9 +166,11 @@ function addFollows(follows) {
             live: false
         };
     }
+    console.log(Object.keys(userData.follows).length);
 }
 
-function getFollows() {
+function getFollows(offset = 0) {
+    let followsAdded = userData.follows.length ? userData.follows.length : offset;
     return new Promise((resolve, reject) => $.ajax({
             url: 'https://api.twitch.tv/kraken/users/' + userData.login + '/follows/channels',
             method: 'GET',
@@ -159,7 +178,8 @@ function getFollows() {
             data: {
                 direction: 'asc',
                 sortby: 'created_at',
-                offset: userData.follows.length
+                limit: FOLLOW_REQ_QUERY_LIMIT,
+                offset: offset
             },
             headers: {
                 'Client-ID': 'szf668t77136wvmtyzfrzmv5p73bnfn',
@@ -168,12 +188,13 @@ function getFollows() {
             timeout: 30000,
             success: (data) => {
                 addFollows(data.follows);
-                if (userData.follows.length < data._total && data.follows.length) {
-                    getFollows().then(() => resolve());
+                followsAdded += data.follows.length;
+                console.log(data);
+                if (offset + followsAdded < data._total && FOLLOW_REQ_QUERY_LIMIT < data._total) {
+                    getFollows(offset + followsAdded + 1).then(() => resolve());
                 } else {
                     resolve();
                 }
-                console.log(data.follows);
             },
             error: ({status, responseJSON}) => reject({
                 status,
