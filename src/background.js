@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
             sendResponse(appData.started);
             break;
         case "getUserData":
-            sendResponse(userData);
+            getUserData().then((data) => sendResponse(data));
             break;
         case "getNextStream":
             let now = Date.now();
@@ -85,6 +85,16 @@ function streamRecentlyEnded(streamName, now) {
     return false;
 }
 
+function getUserData() {
+    return new Promise((resolve, reject) => {
+        if(userData.id) {
+            resolve(userData);
+        } else {
+            loadUserSettings().then(() => resolve(userData));
+        }
+    });
+}
+
 function onUserDataReceived(user, updateLive) {
     return new Promise((resolve, reject) => {
         userData.id = user.id;
@@ -129,20 +139,19 @@ function updateLiveFollowedStreams() {
 
 function setUserSettings(settings) {
     userData.settings = settings;
-    chrome.storage.local.set({'userSettings': settings}, () => {});
+    chrome.storage.local.set({'userData': userData}, () => {});
 }
 
 function loadUserSettings() {
-
     return new Promise((resolve, reject) => {
         if(Object.keys(userData.settings.priorityList).length) {
             return;
         }
-        chrome.storage.local.get('userSettings', (result) => {
+        chrome.storage.local.get('userData', (result) => {
             if (isEmptyObj(result)) {
                 setDefaultSettings();
             } else {
-                userData.settings = result.userSettings;
+                userData = result.userData;
             }
             resolve();
         });
