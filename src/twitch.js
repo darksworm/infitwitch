@@ -67,7 +67,15 @@ function bindToIndicator() {
             characterData: true,
             subtree: true
         });
+
+        openTheaterMode();
     });
+}
+
+function openTheaterMode() {
+     addScript({
+        textContent: "App.__container__.lookup('service:persistentPlayer').playerComponent.player.theatre || window.Mousetrap.trigger('alt+t');"
+     }, false);
 }
 
 function sendStreamOffline(streamName) {
@@ -96,4 +104,8 @@ function addScript(template, silent) {
     if (silent) {
         document.documentElement.removeChild(s);
     }
+}
+
+function lookup(...args) {
+    return window.App ? window.App.__container__.lookup(...args) : null;
 }
