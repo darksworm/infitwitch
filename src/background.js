@@ -10,10 +10,12 @@ let userData = {
 };
 
 const FOLLOW_REQ_QUERY_LIMIT = 100;
+const RECENTLY_OFFLINE_TIME_LIMIT = 300000;
 
 let appData = {
     currentStream: null,
-    started: false
+    started: false,
+    recentlyEndedStreamNames: {}
 };
 
 chrome.browserAction.onClicked.addListener(function () {
@@ -37,13 +39,18 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
             sendResponse(userData);
             break;
         case "getNextStream":
+            let now = Date.now();
+            appData.recentlyEndedStreamNames[msg.data] = now;
             updateLiveFollowedStreams().then(() => {
                 for (let i in userData.settings.priorityList) {
                     let p = userData.settings.priorityList[i];
-                    console.log(userData.follows[p]);
                     if (userData.follows[p].live) {
+                        if(streamRecentlyEnded(userData.follows[p].name, now)) {
+                            continue;
+                        }
                         appData.currentStream = userData.follows[p];
                         appData.started = true;
+                        console.log("new stream:", appData.currentStream);
                         sendResponse(appData.currentStream);
                         return;
                     }
@@ -65,12 +72,25 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     return true;
 });
 
+function streamRecentlyEnded(streamName, now) {
+    for(let stream in appData.recentlyEndedStreamNames) {
+        if(stream === streamName) {
+            if(appData.recentlyEndedStreamNames[stream] + RECENTLY_OFFLINE_TIME_LIMIT < now) {
+                delete appData.recentlyEndedStreamNames[stream];
+            } else {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 function onUserDataReceived(user, updateLive) {
     return new Promise((resolve, reject) => {
         userData.id = user.id;
         userData.login = user.login;
         getFollows()
-            .then(() => getUserSettings()
+            .then(() => loadUserSettings()
                 .then(() => updateLive ? updateLiveFollowedStreams().then(() => resolve(true)) : resolve(true))
             );
     });
@@ -109,15 +129,20 @@ function updateLiveFollowedStreams() {
 
 function setUserSettings(settings) {
     userData.settings = settings;
+    chrome.storage.local.set({'userSettings': settings}, () => {});
 }
 
-function getUserSettings() {
+function loadUserSettings() {
+
     return new Promise((resolve, reject) => {
+        if(Object.keys(userData.settings.priorityList).length) {
+            return;
+        }
         chrome.storage.local.get('userSettings', (result) => {
             if (isEmptyObj(result)) {
                 setDefaultSettings();
             } else {
-                userData.settings = result;
+                userData.settings = result.userSettings;
             }
             resolve();
         });

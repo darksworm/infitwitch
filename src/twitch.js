@@ -20,8 +20,8 @@ $(document).ready(() => {
     }
 );
 
-function getNextStream() {
-    chrome.runtime.sendMessage({type: "getNextStream", data: true}, (stream) => {
+function getNextStream(lastStream = null) {
+    chrome.runtime.sendMessage({type: "getNextStream", data: lastStream}, (stream) => {
         window.location.href = stream.url;
     });
 }
@@ -73,7 +73,7 @@ function bindToIndicator() {
 function sendStreamOffline(streamName) {
     chrome.runtime.sendMessage({type: "streamOffline", data: streamName}, () => {
         console.log(1);
-        getNextStream();
+        getNextStream(streamName);
     })
 }
 
