@@ -4,9 +4,8 @@
   "name": "InfiTwitch",
   "description": "Your mom :)",
   "version": "0.0.1",
-
   "browser_action": {
-    "default_icon": "assets/twitch.png",
+    "default_icon": "static/twitch.png",
     "default_title": "Open settings"
   },
   "permissions": [
@@ -17,8 +16,8 @@
   ],
   "background": {
     "scripts": [
-      "lib/jquery.js",
-      "src/background.js"
+      "js/vendor.js",
+      "js/background.js"
     ],
     "persistent": true
   },
@@ -27,9 +26,8 @@
       "run_at" : "document_end",
       "matches": ["https://www.twitch.tv/*"],
       "js": [
-        "lib/simulacra.js",
-        "lib/jquery.js",
-        "src/twitch.js"
+        "js/vendor.js",
+        "js/twitch.js"
       ]
     }
   ]

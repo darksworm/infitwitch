@@ -1,3 +1,5 @@
+import * as $ from 'jquery';
+
 let userData = {
     id: null,
     login: null,
@@ -19,7 +21,7 @@ let appData = {
 };
 
 chrome.browserAction.onClicked.addListener(function () {
-    chrome.tabs.create({'url': chrome.extension.getURL('src/settings.html')}, function (tab) {
+    chrome.tabs.create({'url': chrome.extension.getURL('static/settings.html')}, function (tab) {
 
     });
 });
@@ -113,7 +115,7 @@ function updateLiveFollowedStreams() {
         implodedStreams += userData.follows[id].name + ',';
     }
     implodedStreams.slice(0, -1);
-
+console.log(implodedStreams);
     return new Promise((resolve, reject) => $.ajax({
             url: 'https://api.twitch.tv/kraken/streams?channel=' + implodedStreams,
             method: 'GET',
@@ -125,6 +127,7 @@ function updateLiveFollowedStreams() {
             },
             timeout: 30000,
             success: (data) => {
+                console.log(data);
                 addLiveFollowedStreams(data.streams);
                 console.log("GOT STREAMS");
                 resolve();
@@ -161,7 +164,7 @@ function loadUserSettings() {
 function setDefaultSettings() {
     userData.settings.priorityList = [];
     for (let id in userData.follows) {
-        userData.settings.priorityList.push(id);
+        userData.settings.priorityList[Object.keys(userData.settings.priorityList).length] = id;
     }
 }
 
@@ -204,7 +207,7 @@ function addFollows(follows) {
 }
 
 function getFollows(offset = 0) {
-    let followsAdded = userData.follows.length ? userData.follows.length : offset;
+    let followsAdded = Object.keys(userData.follows).length ? Object.keys(userData.follows).length : offset;
     return new Promise((resolve, reject) => $.ajax({
             url: 'https://api.twitch.tv/kraken/users/' + userData.login + '/follows/channels',
             method: 'GET',

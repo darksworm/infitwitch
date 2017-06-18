@@ -1,9 +1,11 @@
+import * as $ from 'jquery';
+
 $(document).ready(() => {
     goTurbo();
 });
 
 let streamersCont;
-let userData;
+let userSettings;
 
 function goTurbo() {
     streamersCont = $('#streams');
@@ -13,28 +15,28 @@ function goTurbo() {
 function updateUserData() {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({type: "getUserData", data: true}, (data) => {
-            userData = data;
+            userSettings = data;
             resolve(data);
         });
     });
 }
 
 function populateStreams() {
-    for(let priority in userData.settings.priorityList) {
-        let sID = userData.settings.priorityList[priority];
-        if(userData.follows[sID]) {
-            createStreamElem(userData.follows[sID], priority);
+    for(let priority in userSettings.settings.priorityList) {
+        let sID = userSettings.settings.priorityList[priority];
+        if(userSettings.follows[sID]) {
+            createStreamElem(userSettings.follows[sID], priority);
         }
     }
     streamersCont.sortable().bind('sortupdate', function() {
         let newOrder = {};
         let i = 0;
-        Array.from(streamersCont.children()).forEach((c) => {
+        Array.from(streamersCont.children()).forEach((c:Node) => {
             newOrder[i++] = ($(c).data('id'));
             $(c.firstChild).text(i);
         });
-        userData.settings.priorityList = newOrder;
-        chrome.runtime.sendMessage({type: "setUserSettings", data: userData.settings}, () => {console.log(1)});
+        userSettings.settings.priorityList = newOrder;
+        chrome.runtime.sendMessage({type: "setUserSettings", data: userSettings.settings}, () => {console.log(1)});
     });
 }
 
