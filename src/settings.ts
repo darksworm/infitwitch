@@ -1,4 +1,5 @@
-import * as $ from 'jquery';
+import * as $ from "jquery";
+import {MessageType, Messenger} from "./messaging";
 
 $(document).ready(() => {
     goTurbo();
@@ -14,7 +15,7 @@ function goTurbo() {
 
 function updateUserData() {
     return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({type: "getUserData", data: true}, (data) => {
+        Messenger.send({type: MessageType.GET_USER_DATA, data: "void"}, (data) => {
             userSettings = data;
             resolve(data);
         });
@@ -22,21 +23,22 @@ function updateUserData() {
 }
 
 function populateStreams() {
-    for(let priority in userSettings.settings.priorityList) {
+    for (let priority in userSettings.settings.priorityList) {
         let sID = userSettings.settings.priorityList[priority];
-        if(userSettings.follows[sID]) {
+        if (userSettings.follows[sID]) {
             createStreamElem(userSettings.follows[sID], priority);
         }
     }
-    streamersCont.sortable().bind('sortupdate', function() {
+    streamersCont.sortable().bind('sortupdate', function () {
         let newOrder = {};
         let i = 0;
-        Array.from(streamersCont.children()).forEach((c:Node) => {
+        Array.from(streamersCont.children()).forEach((c: Node) => {
             newOrder[i++] = ($(c).data('id'));
             $(c.firstChild).text(i);
         });
         userSettings.settings.priorityList = newOrder;
-        chrome.runtime.sendMessage({type: "setUserSettings", data: userSettings.settings}, () => {console.log(1)});
+        Messenger.send({type: MessageType.SET_USER_SETTINGS, data: userSettings.settings}, () => {
+        });
     });
 }
 
