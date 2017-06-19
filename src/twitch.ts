@@ -1,4 +1,4 @@
-import * as $ from 'jquery';
+import * as $ from 'jquery'
 import {MessageType, Messenger} from "./messaging";
 import {addScript} from "./helpers";
 import {TwitchUser} from "./twitchdata";
@@ -20,8 +20,8 @@ $(document).ready(() => {
             desa
         );
 
-        Messenger.send({type: MessageType.IS_STARTED, data: true}, (stream:any) => {
-            if (stream) {
+        Messenger.send({type: MessageType.IS_STARTED, data: true}, (isStarted:any) => {
+            if (isStarted) {
                 bindToIndicator();
             }
         });

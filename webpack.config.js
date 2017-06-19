@@ -1,5 +1,6 @@
 const webpack = require("webpack");
-var CopyWebpackPlugin = require('copy-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const BabiliPlugin = require("babili-webpack-plugin");
 const path = require('path');
 
 module.exports = {
@@ -7,24 +8,30 @@ module.exports = {
         settings: path.join(__dirname, 'src/settings.ts'),
         twitch: path.join(__dirname, 'src/twitch.ts'),
         background: path.join(__dirname, 'src/background.ts'),
-        vendor: ['jquery']
+        vendor: ['jquery', 'jquery-sortable']
     },
     output: {
         path: path.join(__dirname, 'dist/js'),
         filename: '[name].js'
     },
     module: {
-        loaders: [{
-            exclude: /node_modules/,
-            test: /\.tsx?$/,
-            loader: 'ts-loader'
-        }]
+        loaders: [
+            {
+                exclude: /node_modules/,
+                test: /\.tsx?$/,
+                loader: 'ts-loader'
+            },
+            {
+                test: require.resolve("jquery"),
+                loader: "expose-loader?$!expose-loader?jQuery"
+            }
+        ]
     },
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
     },
     plugins: [
-        // pack common vender files
+        // pack common vendor files
         new webpack.optimize.CommonsChunkPlugin({
             name: 'vendor',
             minChunks: Infinity
@@ -33,12 +40,11 @@ module.exports = {
         // exclude locale files in moment
         new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
 
-        // minify
-        // new webpack.optimize.UglifyJsPlugin()
-
         new CopyWebpackPlugin([
             {from: 'static/**/*', to: '../'},
             {from: 'manifest.json', to: '../manifest.json'}
-        ])
+        ]),
+
+        new BabiliPlugin({}, {})
     ]
 };
