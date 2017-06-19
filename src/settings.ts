@@ -1,12 +1,13 @@
-import * as $ from 'jquery'
+import * as $ from "jquery";
 import {MessageType, Messenger} from "./messaging";
+import {UserData, UserSettings} from "./userdata";
 
 $(document).ready(() => {
     goTurbo();
 });
 
 let streamersCont;
-let userSettings;
+let userData: UserData;
 
 function goTurbo() {
     streamersCont = $('#streams');
@@ -18,7 +19,7 @@ function goTurbo() {
 function updateUserData() {
     return new Promise((resolve, reject) => {
         Messenger.send({type: MessageType.GET_USER_DATA, data: "void"}, (data) => {
-            userSettings = data;
+            userData = data;
             resolve(data);
         });
     });
@@ -29,20 +30,20 @@ function populateStreams() {
     streamersCont.innerHTML = '';
 
     // populate stream list
-    Array.from(userSettings.settings.priorityList).forEach((streamID: number, priority: number) => {
-        if (userSettings.follows[streamID]) {
-            createStreamElem(userSettings.follows[streamID], priority);
+    for (let priority in userData.settings.priorityList) {
+        let streamID = userData.settings.priorityList[priority];
+        if (userData.follows[streamID]) {
+            createStreamElem(userData.follows[streamID], priority);
         }
-    });
+    }
 
     streamersCont.sortable({
         onDrop: onSortUpdate,
-        cursorAt: { top: 0, left: 0 }
+        cursorAt: {top: 0, left: 0}
     });
 }
 
 function onSortUpdate(data) {
-    console.log(data);
     let newOrder = {};
     let i = 0;
 
@@ -53,8 +54,15 @@ function onSortUpdate(data) {
     });
 
     // update priority list
-    userSettings.settings.priorityList = newOrder;
-    Messenger.send({type: MessageType.SET_USER_SETTINGS, data: userSettings.settings});
+    userData.settings.priorityList = <Map<number, number>>newOrder;
+    saveSettings();
+}
+
+function saveSettings() {
+    let settings: UserSettings = new UserSettings();
+    settings.priorityList = userData.settings.priorityList;
+
+    Messenger.send({type: MessageType.SET_USER_SETTINGS, data: settings});
 }
 
 function createStreamElem(streamer, position) {

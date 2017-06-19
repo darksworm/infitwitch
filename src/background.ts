@@ -47,13 +47,13 @@ function getNextStream(lastStreamId: number): Promise<Stream> {
         appData.recentlyEndedStreamNames[lastStreamId] = now;
         getLiveFollowedStreams(userData).then((data) => {
             addLiveFollowedStreams(data);
-            for (let i in userData.settings.priorityList) {
-                let p = userData.settings.priorityList[i];
-                if (userData.follows[p].live) {
-                    if (streamRecentlyEnded(userData.follows[p].name, now)) {
+            for (let priority in userData.settings.priorityList) {
+                let stream: Stream = userData.follows[userData.settings.priorityList[priority]];
+                if (stream.live) {
+                    if (streamRecentlyEnded(stream.name, now)) {
                         continue;
                     }
-                    appData.currentStream = userData.follows[p];
+                    appData.currentStream = stream;
                     appData.started = true;
                     resolve(appData.currentStream);
                     return;
@@ -127,9 +127,9 @@ function loadUserSettings(data = null) {
 }
 
 function setDefaultSettings() {
-    userData.settings.priorityList = [];
+    userData.settings.priorityList = new Map();
     for (let id in userData.follows) {
-        userData.settings.priorityList[Object.keys(userData.settings.priorityList).length] = +id;
+        userData.settings.priorityList.set(Object.keys(userData.settings.priorityList).length, +id);
     }
 }
 
