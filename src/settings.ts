@@ -35,7 +35,10 @@ function populateStreams() {
         }
     });
 
-    streamersCont.sortable({onDrop: onSortUpdate});
+    streamersCont.sortable({
+        onDrop: onSortUpdate,
+        cursorAt: { top: 0, left: 0 }
+    });
 }
 
 function onSortUpdate(data) {
