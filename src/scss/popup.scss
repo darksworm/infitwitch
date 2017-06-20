@@ -1,0 +1,18 @@
+.btn {
+	width: 100px;
+	height: 100px;
+	background-size: 100px 100px;
+}
+
+.btn-next {
+	background-image: url(../../static/img/skip.svg);
+}
+.btn-prev {
+	background-image: url(../../static/img/previous.svg);
+}
+.btn-play {
+	background-image: url(../../static/img/play.svg);
+}
+.btn-play {
+	background-image: url(../../static/img/pause.svg);
+}

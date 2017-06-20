@@ -1,13 +1,20 @@
 const webpack = require("webpack");
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const BabiliPlugin = require("babili-webpack-plugin");
+const ExtractTextPlugin = require("extract-text-webpack-plugin");
 const path = require('path');
+
+const extractSass = new ExtractTextPlugin({
+    filename: "../css/[name].css"
+});
 
 module.exports = {
     entry: {
-        settings: path.join(__dirname, 'src/settings.ts'),
-        twitch: path.join(__dirname, 'src/twitch.ts'),
-        background: path.join(__dirname, 'src/background.ts'),
+        settings: path.join(__dirname, 'src/ts/settings.ts'),
+        twitch: path.join(__dirname, 'src/ts/twitch.ts'),
+        background: path.join(__dirname, 'src/ts/background.ts'),
+        popup: path.join(__dirname, 'src/ts/popup.ts'),
+        popups: path.join(__dirname, 'src/scss/popup.scss'),
         vendor: ['jquery', 'jquery-sortable']
     },
     output: {
@@ -24,6 +31,20 @@ module.exports = {
             {
                 test: require.resolve("jquery"),
                 loader: "expose-loader?$!expose-loader?jQuery"
+            },
+            {
+                test: /\.svg$/,
+                loader: 'svg-url-loader'
+            },
+            {
+                test: /\.scss$/,
+                loader: extractSass.extract({
+                    use: [{
+                        loader: "css-loader"
+                    }, {
+                        loader: "sass-loader"
+                    }]
+                })
             }
         ]
     },
@@ -31,6 +52,7 @@ module.exports = {
         extensions: ['.ts', '.tsx', '.js']
     },
     plugins: [
+        extractSass,
         // pack common vendor files
         new webpack.optimize.CommonsChunkPlugin({
             name: 'vendor',
@@ -41,7 +63,8 @@ module.exports = {
         new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
 
         new CopyWebpackPlugin([
-            {from: 'static/**/*', to: '../'},
+            {from: 'static/template/*', to: '../'},
+            {from: 'static/img/logo.png', to: '../static/'},
             {from: 'manifest.json', to: '../manifest.json'}
         ]),
 

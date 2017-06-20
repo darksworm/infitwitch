@@ -1,8 +1,8 @@
-import {Stream, TwitchUser} from "./twitchdata";
-import {UserData, UserSettings} from "./userdata";
-import {MessageType} from "./messaging";
-import {isEmptyObj} from "./helpers";
-import {getFollows, getLiveFollowedStreams} from "./api";
+import {Stream, TwitchUser} from "./support/twitchdata";
+import {UserData, UserSettings} from "./support/userdata";
+import {MessageType} from "./support/messaging";
+import {isEmptyObj} from "./support/helpers";
+import {getFollows, getLiveFollowedStreams} from "./support/api";
 
 let userData: UserData = new UserData();
 
@@ -14,10 +14,10 @@ let appData = {
     recentlyEndedStreamNames: {}
 };
 
-chrome.browserAction.onClicked.addListener(function () {
-    chrome.tabs.create({'url': chrome.extension.getURL('static/settings.html')}, function (tab) {
-    });
-});
+// chrome.browserAction.onClicked.addListener(function () {
+//     chrome.tabs.create({'url': chrome.extension.getURL('static/template/settings.html')}, function (tab) {
+//     });
+// });
 
 chrome.runtime.onMessage.addListener(function (msg: any, sender, sendResponse) {
     switch (msg.type) {

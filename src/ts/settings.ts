@@ -1,6 +1,6 @@
 import * as $ from "jquery";
-import {MessageType, Messenger} from "./messaging";
-import {UserData, UserSettings} from "./userdata";
+import {MessageType, Messenger} from "./support/messaging";
+import {UserData, UserSettings} from "./support/userdata";
 
 $(document).ready(() => {
     goTurbo();

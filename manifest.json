@@ -5,8 +5,9 @@
   "description": "Your mom :)",
   "version": "0.0.1",
   "browser_action": {
-    "default_icon": "static/twitch.png",
-    "default_title": "Open settings"
+    "default_icon": "static/logo.png",
+    "default_title": "Infitwitch",
+    "default_popup": "static/template/popup.html"
   },
   "permissions": [
     "activeTab",

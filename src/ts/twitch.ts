@@ -1,7 +1,7 @@
 import * as $ from 'jquery'
-import {MessageType, Messenger} from "./messaging";
-import {addScript} from "./helpers";
-import {TwitchUser} from "./twitchdata";
+import {MessageType, Messenger} from "./support/messaging";
+import {addScript} from "./support/helpers";
+import {TwitchUser} from "./support/twitchdata";
 
 document.addEventListener(MessageType.CATCH_USER_DATA.toString(), (data:any) => {
     Messenger.send({type: MessageType.SET_TWITCH_USER_DATA, data: TwitchUser.fromAny(data.detail)});
