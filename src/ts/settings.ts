@@ -18,7 +18,7 @@ function goTurbo() {
 
 function updateUserData() {
     return new Promise((resolve, reject) => {
-        Messenger.send({type: MessageType.GET_USER_DATA, data: "void"}, (data) => {
+        Messenger.sendToBackground({type: MessageType.GET_USER_DATA, data: "void"}, (data) => {
             userData = data;
             resolve(data);
         });
@@ -62,7 +62,7 @@ function saveSettings() {
     let settings: UserSettings = new UserSettings();
     settings.priorityList = userData.settings.priorityList;
 
-    Messenger.send({type: MessageType.SET_USER_SETTINGS, data: settings});
+    Messenger.sendToBackground({type: MessageType.SET_USER_SETTINGS, data: settings});
 }
 
 function createStreamElem(streamer, position) {

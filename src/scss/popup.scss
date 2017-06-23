@@ -1,18 +1,49 @@
-.btn {
-	width: 100px;
-	height: 100px;
-	background-size: 100px 100px;
+body {
+	width: 150px;
 }
 
-.btn-next {
-	background-image: url(../../static/img/skip.svg);
+.btn {
+	width: 20vw;
+	height: 20vw;
+	background-size: 100% 100%;
+
+	display: inline-block;
+
+	&.btn-next {
+		background-image: url(../../static/img/skip.svg);
+	}
+	&.btn-prev {
+		background-image: url(../../static/img/previous.svg);
+	}
+	&.btn-play {
+		background-image: url(../../static/img/play.svg);
+	}
+	&.btn-pause {
+		background-image: url(../../static/img/pause.svg);
+	}
+	&.btn-settings {
+		background-image: url(../../static/img/settings.svg);
+	}
+
+	&:hover {
+		cursor: pointer;
+	}
 }
-.btn-prev {
-	background-image: url(../../static/img/previous.svg);
+
+#top-btn-cont {
+	text-align:center;
+	.btn-prev {
+		float: left;
+	}
+	.btn-next {
+		float: right;
+	}
 }
-.btn-play {
-	background-image: url(../../static/img/play.svg);
-}
-.btn-play {
-	background-image: url(../../static/img/pause.svg);
+
+#bot-btn-cont {
+	text-align: center;
+	.btn-settings {
+		width: 12.5vw;
+		height: 12.5vw;
+	}
 }

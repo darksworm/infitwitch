@@ -1,26 +1,20 @@
 import * as $ from 'jquery'
-import {MessageType, Messenger} from "./support/messaging";
+import {Message, MessageType, Messenger} from "./support/messaging";
 import {addScript} from "./support/helpers";
 import {TwitchUser} from "./support/twitchdata";
 
 document.addEventListener(MessageType.CATCH_USER_DATA.toString(), (data:any) => {
-    Messenger.send({type: MessageType.SET_TWITCH_USER_DATA, data: TwitchUser.fromAny(data.detail)});
+    Messenger.sendToBackground({type: MessageType.SET_TWITCH_USER_DATA, data: TwitchUser.fromAny(data.detail)});
 });
+
+
 
 addScript({
     textContent: 'window.Twitch.user().then(user => document.dispatchEvent(new CustomEvent(\''+MessageType.CATCH_USER_DATA.toString()+'\', {detail:user})));'
 }, false);
 
 $(document).ready(() => {
-        let desa = $('<div style="background: red; width: 100px; position: absolute; top:0; left:0; z-index: 999; height: 100px;"></div>');
-        desa.click(() => {
-            getNextStream();
-        });
-        $(document.body).append(
-            desa
-        );
-
-        Messenger.send({type: MessageType.IS_STARTED, data: true}, (isStarted:any) => {
+        Messenger.sendToBackground({type: MessageType.IS_STARTED, data: true}, (isStarted:any) => {
             if (isStarted) {
                 bindToIndicator();
             }
@@ -29,10 +23,16 @@ $(document).ready(() => {
 );
 
 function getNextStream(lastStream = '') {
-    Messenger.send({type: MessageType.GET_NEXT_STREAM, data: lastStream}, (stream) => {
-        window.location.href = stream.url;
-    });
+    Messenger.sendToBackground({type: MessageType.STREAM_ENDED, data: lastStream});
 }
+
+chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendResponse) {
+    switch (msg.type) {
+        case MessageType.OPEN_STREAM:
+            window.location.href = msg.data.url;
+            break;
+    }
+});
 
 function getLiveIndicator(): Promise<Node>{
     return new Promise<Node>((resolve, reject) => {

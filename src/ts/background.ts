@@ -1,6 +1,6 @@
 import {Stream, TwitchUser} from "./support/twitchdata";
 import {UserData, UserSettings} from "./support/userdata";
-import {MessageType} from "./support/messaging";
+import {Message, MessageType, Messenger} from "./support/messaging";
 import {isEmptyObj} from "./support/helpers";
 import {getFollows, getLiveFollowedStreams} from "./support/api";
 
@@ -14,12 +14,7 @@ let appData = {
     recentlyEndedStreamNames: {}
 };
 
-// chrome.browserAction.onClicked.addListener(function () {
-//     chrome.tabs.create({'url': chrome.extension.getURL('static/template/settings.html')}, function (tab) {
-//     });
-// });
-
-chrome.runtime.onMessage.addListener(function (msg: any, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendResponse) {
     switch (msg.type) {
         case MessageType.SET_TWITCH_USER_DATA:
             onUserDataReceived(<TwitchUser> msg.data);
@@ -33,24 +28,37 @@ chrome.runtime.onMessage.addListener(function (msg: any, sender, sendResponse) {
         case MessageType.GET_USER_DATA:
             getUserData().then((data) => sendResponse(data));
             break;
-        case MessageType.GET_NEXT_STREAM:
-            getNextStream(msg.data).then((stream) => sendResponse(stream));
+        case MessageType.NEXT:
+        case MessageType.STREAM_ENDED:
+            appData.recentlyEndedStreamNames[msg.data] = Date.now();
+            getNextStream().then((stream) => Messenger.sendToTab({type: MessageType.OPEN_STREAM, data:stream}));
             break;
+        case MessageType.PLAY_PAUSE:
+            appData.started = !appData.started;
+            if(appData.started) {
+                getNextStream().then((stream) => Messenger.sendToTab({
+                    type: MessageType.OPEN_STREAM,
+                    data: stream
+                }));
+            }
+            break;
+        case MessageType.PREVIOUS:
+            // TODO
+            break;
+        default:
+            throw new Error("Unimplemented message handler for message type: " + msg.type.toString());
     }
     return true;
 });
 
-function getNextStream(lastStreamId: number): Promise<Stream> {
+function getNextStream(): Promise<Stream> {
     return new Promise((resolve, reject) => {
-        let now = Date.now();
-
-        appData.recentlyEndedStreamNames[lastStreamId] = now;
         getLiveFollowedStreams(userData).then((data) => {
             addLiveFollowedStreams(data);
             for (let priority in userData.settings.priorityList) {
                 let stream: Stream = userData.follows[userData.settings.priorityList[priority]];
                 if (stream.live) {
-                    if (streamRecentlyEnded(stream.name, now)) {
+                    if (streamRecentlyEnded(stream.name)) {
                         continue;
                     }
                     appData.currentStream = stream;
@@ -64,7 +72,8 @@ function getNextStream(lastStreamId: number): Promise<Stream> {
     });
 }
 
-function streamRecentlyEnded(streamName, now) {
+function streamRecentlyEnded(streamName) {
+    let now = Date.now();
     for (let stream in appData.recentlyEndedStreamNames) {
         if (stream === streamName) {
             if (appData.recentlyEndedStreamNames[stream] + RECENTLY_OFFLINE_TIME_LIMIT < now) {
