@@ -30,6 +30,7 @@ function populateStreams() {
     streamersCont.innerHTML = '';
 
     // populate stream list
+    console.log(userData);
     for (let priority in userData.settings.priorityList) {
         let streamID = userData.settings.priorityList[priority];
         if (userData.follows[streamID]) {

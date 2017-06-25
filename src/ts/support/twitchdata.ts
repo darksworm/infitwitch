@@ -5,6 +5,18 @@ export class Stream {
     url: string;
     logo: string;
     live: Boolean;
+
+    static fromAny(data: any): Stream {
+        let i = new Stream();
+        i.id = data.id;
+        i.displayName = data.displayName;
+        i.name = data.name;
+        i.url = data.url;
+        i.logo = data.logo;
+        i.live = data.live;
+
+        return i;
+    }
 }
 
 export class TwitchUser {
