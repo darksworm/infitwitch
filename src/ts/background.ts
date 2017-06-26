@@ -76,6 +76,10 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
             appData.shouldShowLoginMessage = false;
             break;
 
+        case MessageType.HAS_PREV_NEXT:
+            sendResponse({prev:!!appData.streamHistory.length, next:appData.started});
+            break;
+
         default:
             throw new Error("Unimplemented message handler for message type: " + msg.type.toString());
     }
@@ -87,7 +91,7 @@ function start() {
         if (userData.id) {
             // if we already have user data go straight to top priority stream
             getNextStream().then((stream: Stream) => {
-                createTab(stream.url).then((tab: Tab) => {
+                createTab(appData.firstRun, stream.url).then((tab: Tab) => {
                     Messenger.tabId = tab.id;
                     appData.currentStream = stream;
                     Messenger.sendToTab({type: MessageType.OPEN_STREAM, data: stream});
@@ -95,7 +99,7 @@ function start() {
             });
         } else {
             // if there is no user data, open "/" on twitch so getTwitchUserData executes
-            createTab().then((tab: Tab) => {
+            createTab(appData.firstRun).then((tab: Tab) => {
                 Messenger.tabId = tab.id;
                 appData.waitingForData = true;
                 Messenger.sendToTab({type: MessageType.EXTRACT_TWITCH_USER, data: "void"});
@@ -235,3 +239,9 @@ function addLiveFollowedStreams(streams) {
         userData.follows[stream.channel._id].live = true;
     }
 }
+
+chrome.runtime.onInstalled.addListener(function(details){
+    if(details.reason == "install") {
+        appData.firstRun = true;
+    }
+});

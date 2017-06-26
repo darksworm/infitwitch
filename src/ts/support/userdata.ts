@@ -14,6 +14,7 @@ export class AppData {
     public streamHistory: number[] = [];
     public shouldShowLoginMessage: boolean = false;
     public waitingForData: boolean = false;
+    public firstRun: boolean = false;
 }
 
 export class UserSettings {

@@ -6,22 +6,25 @@ $(document).ready(() => {
     let prevBtn = $('.btn-prev');
     let nextBtn = $('.btn-next');
     let settingsBtn = $('.btn-settings');
+    let prevNext = {prev: false, next: false};
 
     playBtn.click(() => {
+        playBtn
+            .toggleClass('btn-play').toggleClass('btn-pause');
         Messenger.sendToBackground({type: MessageType.PLAY_STOP, data: "void"}, () => {
-            playBtn
-                .toggleClass('btn-play');
-            playBtn
-                .toggleClass('btn-pause');
         });
     });
 
     prevBtn.click(() => {
-        Messenger.sendToBackground({type: MessageType.PREVIOUS, data: "void"});
+        if(prevNext.prev) {
+            Messenger.sendToBackground({type: MessageType.PREVIOUS, data: "void"});
+        }
     });
 
     nextBtn.click(() => {
-        Messenger.sendToBackground({type: MessageType.NEXT, data: "void"});
+        if(prevNext.next) {
+            Messenger.sendToBackground({type: MessageType.NEXT, data: "void"});
+        }
     });
 
     settingsBtn.click(() => {
@@ -37,5 +40,11 @@ $(document).ready(() => {
             playBtn.addClass("btn-play");
             playBtn.removeClass("btn-pause");
         }
+    });
+
+    Messenger.sendToBackground({type: MessageType.HAS_PREV_NEXT, data: "void"}, (data: any) => {
+        prevNext = data;
+        nextBtn.css("backgroundColor", data.next ? "whitesmoke" : "gray");
+        prevBtn.css("backgroundColor", data.prev ? "whitesmoke" : "gray");
     });
 });

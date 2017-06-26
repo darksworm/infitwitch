@@ -25,18 +25,24 @@ export function addScript(template, silent) {
     }
 }
 
-export function createTab(url:string = "https://www.twitch.tv"): Promise<Tab> {
+export function createTab(firstRun: boolean = false, url: string = "https://www.twitch.tv"): Promise<Tab> {
     return new Promise((resolve) => {
-        chrome.tabs.query({url:["https://www.twitch.tv/*"], currentWindow: true}, (tabs: Tab[]) => {
-            if(tabs.length != 0) {
+        chrome.tabs.query({url: ["https://www.twitch.tv/*"], currentWindow: true}, (tabs: Tab[]) => {
+            if (tabs.length != 0) {
                 let selectedTab = null;
-                for(let tab of tabs) {
-                    if(tab.active) {
+                for (let tab of tabs) {
+                    if (tab.active) {
                         selectedTab = tab;
                     }
                 }
-                if(null === selectedTab) {
+                if (null === selectedTab) {
                     selectedTab = tabs[0];
+                }
+                let settings: any = {active: true};
+                
+                // if just installed, reload the page so the correct scripts get injected ))
+                if (firstRun) {
+                    settings.url = "https://www.twitch.tv/";
                 }
                 chrome.tabs.update(selectedTab.id, {active: true}, (tab: Tab) =>
                     resolve(tab)
