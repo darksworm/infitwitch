@@ -127,6 +127,7 @@ function openNextStream() {
             type: MessageType.OPEN_STREAM,
             data: stream
         });
+        appData.firstRun = false;
     });
 }
 
