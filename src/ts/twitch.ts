@@ -5,27 +5,46 @@ import {Stream, TwitchUser} from "./support/twitchdata";
 
 let currentStream: Stream = null;
 
-function getTwitchUserData(): Promise<any> {
-    return new Promise((resolve, reject) => {
-        document.addEventListener(MessageType.CATCH_USER_DATA.toString(), (data: any) => {
-            resolve(data);
-        });
+document.addEventListener(MessageType.CATCH_USER_DATA.toString(), onDataResponse);
 
-        addScript({
-            textContent: 'window.Twitch.user().then(user => document.dispatchEvent(new CustomEvent(\'' + MessageType.CATCH_USER_DATA.toString() + '\', {detail:user})));'
-        }, false);
-    });
+function onDataResponse(data: any) {
+    data = data.detail;
+    if (data.status) {
+        if (data.status == 401) {
+            Messenger.sendToBackground({
+                type: MessageType.SET_SHOW_LOGIN_MESSAGE,
+                data: "void"
+            }, () => {
+                window.location.href = "https://www.twitch.tv/login";
+            });
+        } else {
+            console.log("sometingwong")
+        }
+    } else {
+        Messenger.sendToBackground({
+            type: MessageType.SET_TWITCH_USER_DATA,
+            data: TwitchUser.fromAny(data)
+        });
+    }
+}
+
+function getTwitchUserData() {
+    addScript({
+        textContent: 'window.Twitch.user()' +
+        '.then(user => document.dispatchEvent(new CustomEvent(\'' + MessageType.CATCH_USER_DATA.toString() + '\', {detail:user})))' +
+        '.catch(err => document.dispatchEvent(new CustomEvent(\'' + MessageType.CATCH_USER_DATA.toString() + '\', {detail:err})));'
+    }, true);
 }
 
 $(document).ready(() => {
         Messenger.sendToBackground({type: MessageType.IS_STARTED, data: "void"}, (isStarted: any) => {
-            if (isStarted) {
-                bindToIndicator();
-                if(window.location.pathname == '/') {
-                    getTwitchUserData().then((data) => {
-                        Messenger.sendToBackground({type: MessageType.SET_TWITCH_USER_DATA, data: TwitchUser.fromAny(data.detail)});
-                    })
-                }
+            if (!isStarted) {
+                return;
+            }
+
+            bindToIndicator();
+            if (window.location.pathname == '/') {
+                getTwitchUserData();
             }
         });
     }
@@ -42,10 +61,7 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
             window.location.href = msg.data.url;
             break;
         case MessageType.EXTRACT_TWITCH_USER:
-            getTwitchUserData().then((data) => {
-                    sendResponse(TwitchUser.fromAny(data.detail))
-                }
-            );
+            getTwitchUserData();
             break;
     }
 });

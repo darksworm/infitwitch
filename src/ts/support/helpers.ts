@@ -25,9 +25,9 @@ export function addScript(template, silent) {
     }
 }
 
-export function createTab(settings: CreateProperties): Promise<Tab> {
+export function createTab(url:string = "https://www.twitch.tv"): Promise<Tab> {
     return new Promise((resolve) => {
-        chrome.tabs.query({url:["https://www.twitch.tv/*"]}, (tabs: Tab[]) => {
+        chrome.tabs.query({url:["https://www.twitch.tv/*"], currentWindow: true}, (tabs: Tab[]) => {
             if(tabs.length != 0) {
                 let selectedTab = null;
                 for(let tab of tabs) {
@@ -37,13 +37,12 @@ export function createTab(settings: CreateProperties): Promise<Tab> {
                 }
                 if(null === selectedTab) {
                     selectedTab = tabs[0];
-                    settings.active = true;
-                    chrome.tabs.update(selectedTab.id, settings, (tab: Tab) =>
-                        resolve(tab)
-                    );
                 }
+                chrome.tabs.update(selectedTab.id, {active: true}, (tab: Tab) =>
+                    resolve(tab)
+                );
             } else {
-                chrome.tabs.create(settings, (tab: Tab) => {
+                chrome.tabs.create({url: url}, (tab: Tab) => {
                     resolve(tab);
                 });
             }

@@ -4,7 +4,7 @@ import Tab = chrome.tabs.Tab;
 
 export enum MessageType {
     CATCH_USER_DATA, SET_TWITCH_USER_DATA, SET_USER_SETTINGS, IS_STARTED, GET_USER_DATA, STREAM_ENDED,
-    PLAY_STOP, PREVIOUS, NEXT, OPEN_STREAM, EXTRACT_TWITCH_USER
+    PLAY_STOP, PREVIOUS, NEXT, OPEN_STREAM, EXTRACT_TWITCH_USER, SET_SHOW_LOGIN_MESSAGE, SHOULD_SHOW_LOGIN_MESSAGE
 }
 
 const MESSAGE_PARAMETER_TYPES: Map<MessageType, string> = new Map<MessageType, string>([
@@ -19,6 +19,8 @@ const MESSAGE_PARAMETER_TYPES: Map<MessageType, string> = new Map<MessageType, s
     [MessageType.IS_STARTED, "void"],
     [MessageType.PREVIOUS, "void"],
     [MessageType.NEXT, "void"],
+    [MessageType.SET_SHOW_LOGIN_MESSAGE, "void"],
+    [MessageType.SHOULD_SHOW_LOGIN_MESSAGE, "void"]
 ]);
 
 export interface Message {

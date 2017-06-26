@@ -10,8 +10,9 @@ $(document).ready(() => {
     playBtn.click(() => {
         Messenger.sendToBackground({type: MessageType.PLAY_STOP, data: "void"}, () => {
             playBtn
-                .toggleClass('btn-play')
-                .toggleClass('btn-stop');
+                .toggleClass('btn-play');
+            playBtn
+                .toggleClass('btn-pause');
         });
     });
 
@@ -28,13 +29,13 @@ $(document).ready(() => {
         });
     });
 
-    Messenger.sendToBackground({type:MessageType.IS_STARTED, data: "void"}, (started: boolean) => {
-       if(started) {
-           playBtn.removeClass("btn-play");
-           playBtn.addClass("btn-pause");
-       } else {
-           playBtn.addClass("btn-play");
-           playBtn.removeClass("btn-pause");
-       }
+    Messenger.sendToBackground({type: MessageType.IS_STARTED, data: "void"}, (started: boolean) => {
+        if (started) {
+            playBtn.removeClass("btn-play");
+            playBtn.addClass("btn-pause");
+        } else {
+            playBtn.addClass("btn-play");
+            playBtn.removeClass("btn-pause");
+        }
     });
 });

@@ -22,6 +22,10 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
 
         case MessageType.SET_USER_SETTINGS:
             setUserSettings(<UserSettings> msg.data);
+            if(appData.waitingForData) {
+                openNextStream();
+                appData.waitingForData = false;
+            }
             break;
 
         case MessageType.IS_STARTED:
@@ -61,6 +65,17 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
             });
             break;
 
+        case MessageType.SET_SHOW_LOGIN_MESSAGE:
+            appData.shouldShowLoginMessage = true;
+            appData.waitingForData = true;
+            sendResponse(true);
+            break;
+
+        case MessageType.SHOULD_SHOW_LOGIN_MESSAGE:
+            sendResponse(appData.shouldShowLoginMessage);
+            appData.shouldShowLoginMessage = false;
+            break;
+
         default:
             throw new Error("Unimplemented message handler for message type: " + msg.type.toString());
     }
@@ -72,19 +87,27 @@ function start() {
         if (userData.id) {
             // if we already have user data go straight to top priority stream
             getNextStream().then((stream: Stream) => {
-                createTab({url: stream.url}).then((tab: Tab) => {
+                createTab(stream.url).then((tab: Tab) => {
                     Messenger.tabId = tab.id;
                     appData.currentStream = stream;
+                    Messenger.sendToTab({type: MessageType.OPEN_STREAM, data: stream});
                 })
             });
         } else {
             // if there is no user data, open "/" on twitch so getTwitchUserData executes
-            createTab({url: "https://www.twitch.tv/"}).then((tab: Tab) => {
+            createTab().then((tab: Tab) => {
                 Messenger.tabId = tab.id;
+                appData.waitingForData = true;
+                Messenger.sendToTab({type: MessageType.EXTRACT_TWITCH_USER, data: "void"});
             });
         }
     } else {
-        openNextStream();
+        if (userData.id) {
+            openNextStream();
+        } else {
+            appData.waitingForData = true;
+            Messenger.sendToTab({type: MessageType.EXTRACT_TWITCH_USER, data: "void"});
+        }
     }
 }
 
@@ -116,7 +139,6 @@ function getNextStream(): Promise<Stream> {
             }
             reject();
         }).catch((err) => {
-            console.log(err);
             reject(err);
         });
     });
@@ -150,6 +172,10 @@ function getUserData(): Promise<UserData> {
 
 function onUserDataReceived(user: TwitchUser) {
     return new Promise((resolve, reject) => {
+        if (!user) {
+            resolve(true);
+            return;
+        }
         userData.id = user.id;
         userData.login = user.login;
         Api.getFollows(userData)
@@ -158,7 +184,6 @@ function onUserDataReceived(user: TwitchUser) {
                     resolve(true)
                 )
             ).catch((err) => {
-                console.log(err);
                 reject(err);
             }
         );

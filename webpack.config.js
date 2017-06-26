@@ -12,6 +12,7 @@ module.exports = {
     entry: {
         settings: path.join(__dirname, 'src/ts/settings.ts'),
         twitch: path.join(__dirname, 'src/ts/twitch.ts'),
+        login: path.join(__dirname, 'src/ts/login.ts'),
         background: path.join(__dirname, 'src/ts/background.ts'),
         popup: path.join(__dirname, 'src/ts/popup.ts'),
         vendor: [
@@ -70,7 +71,7 @@ module.exports = {
 
         new CopyWebpackPlugin([
             {from: 'static/template/*', to: '../'},
-            {from: 'static/img/logo.png', to: '../static/'},
+            {from: 'static/img/*.png', to: '../'},
             {from: 'manifest.json', to: '../manifest.json'}
         ]),
 

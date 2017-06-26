@@ -5,16 +5,22 @@
   "description": "Your mom :)",
   "version": "0.0.1",
   "browser_action": {
-    "default_icon": "static/logo.png",
+    "default_icon": "static/img/logo16.png",
     "default_title": "Infitwitch",
     "default_popup": "static/template/popup.html"
   },
   "permissions": [
     "activeTab",
     "https://www.twitch.tv/*",
+    "https://passport.twitch.tv/authentications/*",
     "storage",
     "tabs"
   ],
+  "icons": {
+    "16": "static/img/logo16.png",
+    "48": "static/img/logo48.png",
+    "128": "static/img/logo128.png"
+  },
   "background": {
     "scripts": [
       "js/vendor.js",
@@ -29,6 +35,14 @@
       "js": [
         "js/vendor.js",
         "js/twitch.js"
+      ]
+    },
+    {
+      "run_at" : "document_end",
+      "matches": ["https://passport.twitch.tv/authentications/*"],
+      "js": [
+        "js/vendor.js",
+        "js/login.js"
       ]
     }
   ]
