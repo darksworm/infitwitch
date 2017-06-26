@@ -7,6 +7,13 @@ export class UserData {
     settings: UserSettings = new UserSettings();
 }
 
+export class AppData {
+    public currentStream: Stream = null;
+    public started: boolean = false;
+    public recentlyEndedStreams = {};
+    public streamHistory: number[] = [];
+}
+
 export class UserSettings {
     priorityList: Map<number, number> = new Map();
 }

@@ -23,7 +23,6 @@ $(document).ready(() => {
                 bindToIndicator();
                 if(window.location.pathname == '/') {
                     getTwitchUserData().then((data) => {
-                        console.log(data);
                         Messenger.sendToBackground({type: MessageType.SET_TWITCH_USER_DATA, data: TwitchUser.fromAny(data.detail)});
                     })
                 }
@@ -44,7 +43,6 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
             break;
         case MessageType.EXTRACT_TWITCH_USER:
             getTwitchUserData().then((data) => {
-                    console.log(data);
                     sendResponse(TwitchUser.fromAny(data.detail))
                 }
             );
@@ -52,8 +50,8 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
     }
 });
 
-function getLiveIndicator(): Promise<Node> {
-    return new Promise<Node>((resolve, reject) => {
+function getLiveIndicator(): Promise<HTMLElement> {
+    return new Promise<HTMLElement>((resolve, reject) => {
         let i = $('.player-streamstatus__label');
         if (i.length) {
             resolve(i[0]);

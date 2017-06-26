@@ -1,16 +1,9 @@
 import {Stream, TwitchUser} from "./support/twitchdata";
-import {UserData, UserSettings} from "./support/userdata";
+import {AppData, UserData, UserSettings} from "./support/userdata";
 import {Message, MessageType, Messenger} from "./support/messaging";
-import {isEmptyObj} from "./support/helpers";
+import {createTab, isEmptyObj} from "./support/helpers";
 import {Api} from "./support/api";
 import Tab = chrome.tabs.Tab;
-
-class AppData {
-    public currentStream: Stream = null;
-    public started: boolean = false;
-    public recentlyEndedStreams = {};
-    public streamHistory: number[] = [];
-}
 
 let userData: UserData = new UserData();
 
@@ -26,15 +19,19 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
                 openNextStream();
             });
             break;
+
         case MessageType.SET_USER_SETTINGS:
             setUserSettings(<UserSettings> msg.data);
             break;
+
         case MessageType.IS_STARTED:
             sendResponse(appData.started);
             break;
+
         case MessageType.GET_USER_DATA:
             getUserData().then((data) => sendResponse($.extend({}, data)));
             break;
+
         case MessageType.NEXT:
         case MessageType.STREAM_ENDED:
             let lastStreamId = msg.data == "void" ? appData.currentStream.id : msg.data;
@@ -42,23 +39,28 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
             appData.recentlyEndedStreams[lastStreamId] = Date.now();
             openNextStream();
             break;
-        case MessageType.PLAY_PAUSE:
+
+        case MessageType.PLAY_STOP:
             appData.started = !appData.started;
             if (appData.started) {
-                start();
+                userData.id ? start() : loadUserSettings().then(() => start());
             } else {
                 end();
             }
             break;
+
         case MessageType.PREVIOUS:
             let streamId = appData.streamHistory.pop();
             let lastStream = userData.follows[streamId];
+
             delete appData.recentlyEndedStreams[streamId];
+
             Messenger.sendToTab({
                 type: MessageType.OPEN_STREAM,
                 data: Stream.fromAny(lastStream)
             });
             break;
+
         default:
             throw new Error("Unimplemented message handler for message type: " + msg.type.toString());
     }
@@ -66,20 +68,27 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
 });
 
 function start() {
-    if(Messenger.tabId == null) {
-        chrome.tabs.create({url: "https://www.twitch.tv/"}, (tab: Tab) => {
-            Messenger.tabId = tab.id;
-            if(userData.id) {
-                openNextStream();
-            }
-        });
+    if (Messenger.tabId == null) {
+        if (userData.id) {
+            // if we already have user data go straight to top priority stream
+            getNextStream().then((stream: Stream) => {
+                createTab({url: stream.url}).then((tab: Tab) => {
+                    Messenger.tabId = tab.id;
+                    appData.currentStream = stream;
+                })
+            });
+        } else {
+            // if there is no user data, open "/" on twitch so getTwitchUserData executes
+            createTab({url: "https://www.twitch.tv/"}).then((tab: Tab) => {
+                Messenger.tabId = tab.id;
+            });
+        }
     } else {
         openNextStream();
     }
 }
 
 function end() {
-    chrome.tabs.remove(Messenger.tabId);
     Messenger.tabId = null;
     appData = new AppData();
 }
@@ -106,6 +115,9 @@ function getNextStream(): Promise<Stream> {
                 }
             }
             reject();
+        }).catch((err) => {
+            console.log(err);
+            reject(err);
         });
     });
 }
@@ -125,13 +137,11 @@ function streamRecentlyEnded(id: number) {
 }
 
 function getUserData(): Promise<UserData> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (userData.id) {
-            console.log(userData);
             resolve(userData);
         } else {
-            loadUserSettings().then(() => {
-                console.log(userData);
+            loadUserSettings().then((userData) => {
                 resolve(userData);
             });
         }
@@ -143,24 +153,29 @@ function onUserDataReceived(user: TwitchUser) {
         userData.id = user.id;
         userData.login = user.login;
         Api.getFollows(userData)
-            .then((userData) => loadUserSettings(userData)
-                .then(() => Api.getLiveFollowedStreams(userData).then((data) => {
-                    addLiveFollowedStreams(data);
-                    resolve(true);
-                }))
-            );
+            .then((userData) =>
+                loadUserSettings(userData).then(() =>
+                    resolve(true)
+                )
+            ).catch((err) => {
+                console.log(err);
+                reject(err);
+            }
+        );
     });
 }
 
 function setUserSettings(settings: UserSettings) {
     userData.settings = settings;
     chrome.storage.local.set({'userData': userData}, () => {
+        console.log("SAVED USER SETTINGS:", userData);
     });
 }
 
 function loadUserSettings(data = null) {
     if (data) {
         userData = data;
+
     }
     return new Promise((resolve, reject) => {
         if (Object.keys(userData.settings.priorityList).length) {
@@ -168,11 +183,13 @@ function loadUserSettings(data = null) {
         }
         chrome.storage.local.get('userData', (result) => {
             if (isEmptyObj(result)) {
+                console.log("SETTING DEFAULT SETTINGS");
                 setDefaultSettings();
             } else {
+                console.log("LOADED USER SETTINGS FROM LOCAL STORAGE:", result.userData);
                 userData = result.userData;
             }
-            resolve();
+            resolve(userData);
         });
     });
 }

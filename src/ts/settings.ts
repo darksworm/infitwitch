@@ -1,6 +1,8 @@
 import * as $ from "jquery";
 import {MessageType, Messenger} from "./support/messaging";
 import {UserData, UserSettings} from "./support/userdata";
+import OnDragEventHandler = JQuerySortable.OnDragEventHandler;
+import id = chrome.runtime.id;
 
 $(document).ready(() => {
     goTurbo();
@@ -8,15 +10,31 @@ $(document).ready(() => {
 
 let streamersCont;
 let userData: UserData;
+let filterInput;
 
 function goTurbo() {
     streamersCont = $('#streams');
-    updateUserData().then(() => {
+    filterInput = $('#filter');
+    filterInput.keyup(filterData);
+    getUserData().then(() => {
         populateStreams();
     });
 }
 
-function updateUserData() {
+function filterData() {
+    let str = filterInput.val();
+    streamersCont.children().show();
+    if (str.length) {
+        streamersCont
+            .children()
+            .filter((idx, el) => {
+                return $(el).children().eq(1).text().indexOf(str) == -1
+            })
+            .hide();
+    }
+}
+
+function getUserData() {
     return new Promise((resolve, reject) => {
         Messenger.sendToBackground({type: MessageType.GET_USER_DATA, data: "void"}, (data) => {
             userData = data;
@@ -30,7 +48,6 @@ function populateStreams() {
     streamersCont.innerHTML = '';
 
     // populate stream list
-    console.log(userData);
     for (let priority in userData.settings.priorityList) {
         let streamID = userData.settings.priorityList[priority];
         if (userData.follows[streamID]) {
@@ -40,7 +57,41 @@ function populateStreams() {
 
     streamersCont.sortable({
         onDrop: onSortUpdate,
-        cursorAt: {top: 0, left: 0}
+        onDragStart: onDragStart,
+        vertical: true,
+        onDrag: onDrag
+    });
+
+}
+
+function onDrag($item?: JQuery, position?: any, _super?: OnDragEventHandler, event?: Event) {
+    $item.css({
+        'position': 'absolute',
+        'left': position.left - ($item.outerWidth() / 2),
+        'top': position.top - ($item.outerHeight() / 2),
+        'width': streamersCont.outerWidth(),
+        'height': 'auto',
+        'border': '2px solid #DC3522',
+        'background-color': '#374140'
+    });
+}
+
+function onDragStart(elem) {
+    resetElem(elem);
+    $(elem).css('z-index', '9999');
+    filterInput.val('');
+    filterData();
+}
+
+function resetElem(elem) {
+    $(elem).css({
+        'position': 'relative',
+        'left': 'auto',
+        'top': 'auto',
+        'width': 'auto',
+        'height': 'auto',
+        'border': 'none',
+        'z-index': '1'
     });
 }
 
@@ -48,10 +99,16 @@ function onSortUpdate(data) {
     let newOrder = {};
     let i = 0;
 
+    resetElem(data);
+
     Array.from(streamersCont.children()).map($).forEach((streamNode: JQuery) => {
         newOrder[i] = streamNode.data('id');
+        // position will be array index and increment i to display it on numberCont
         streamNode.attr('data-position', i++);
+        // first child = numberCont (span which contains priority)
         streamNode.children().eq(0).text(i);
+        // remove margins
+        streamNode.css('marginTop', '0');
     });
 
     // update priority list
@@ -69,10 +126,10 @@ function saveSettings() {
 function createStreamElem(streamer, position) {
     let streamerCont = document.createElement('li');
     let numberCont = document.createElement('span');
-    $(numberCont).text(+position + 1);
+    $(numberCont).text(+position + 1).addClass('position');
 
     let nameCont = document.createElement('span');
-    $(nameCont).text(streamer.name);
+    $(nameCont).text(streamer.name).addClass('name');
 
     $(streamerCont)
         .addClass('streamer')

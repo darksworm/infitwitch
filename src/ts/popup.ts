@@ -8,10 +8,10 @@ $(document).ready(() => {
     let settingsBtn = $('.btn-settings');
 
     playBtn.click(() => {
-        Messenger.sendToBackground({type: MessageType.PLAY_PAUSE, data: "void"}, () => {
+        Messenger.sendToBackground({type: MessageType.PLAY_STOP, data: "void"}, () => {
             playBtn
                 .toggleClass('btn-play')
-                .toggleClass('btn-pause');
+                .toggleClass('btn-stop');
         });
     });
 

@@ -14,8 +14,14 @@ module.exports = {
         twitch: path.join(__dirname, 'src/ts/twitch.ts'),
         background: path.join(__dirname, 'src/ts/background.ts'),
         popup: path.join(__dirname, 'src/ts/popup.ts'),
-        popups: path.join(__dirname, 'src/scss/popup.scss'),
-        vendor: ['jquery', 'jquery-sortable']
+        vendor: [
+            'jquery',
+            'jquery-sortable'
+        ],
+        styles: [
+            path.join(__dirname, 'src/scss/popup.scss'),
+            path.join(__dirname, 'src/scss/settings.scss')
+        ],
     },
     output: {
         path: path.join(__dirname, 'dist/js'),
