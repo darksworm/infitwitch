@@ -11,8 +11,8 @@ const extractSass = new ExtractTextPlugin({
 module.exports = {
     entry: {
         settings: path.join(__dirname, 'src/ts/settings.ts'),
-        twitch: path.join(__dirname, 'src/ts/twitch.ts'),
-        login: path.join(__dirname, 'src/ts/login.ts'),
+        twitch: path.join(__dirname, 'src/ts/cs/twitch.ts'),
+        login: path.join(__dirname, 'src/ts/cs/login.ts'),
         background: path.join(__dirname, 'src/ts/background.ts'),
         popup: path.join(__dirname, 'src/ts/popup.ts'),
         vendor: [

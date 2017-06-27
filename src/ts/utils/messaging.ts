@@ -1,5 +1,5 @@
-import {UserSettings} from "./userdata";
-import {Stream, TwitchUser} from "./twitchdata";
+import {UserSettings} from "../data/localdata";
+import {Stream, TwitchUser} from "../data/twitchdata";
 import Tab = chrome.tabs.Tab;
 
 export enum MessageType {
@@ -30,7 +30,7 @@ export interface Message {
 }
 
 export class Messenger {
-    private static _tabId: number = null;
+    private static _tabId: number = undefined;
 
     static set tabId(value: number) {
         this._tabId = value;
@@ -47,7 +47,7 @@ export class Messenger {
     }
 
     private static checkMessage(message: Message) {
-        if (null == message || null == message.type || null == message.data) {
+        if (undefined == message || undefined == message.type || undefined == message.data) {
             throw new Error("Null message passed");
         } else {
             if (!(message.data.constructor.name == MESSAGE_PARAMETER_TYPES.get(message.type) || message.data == "void" && "void" == MESSAGE_PARAMETER_TYPES.get(message.type))) {

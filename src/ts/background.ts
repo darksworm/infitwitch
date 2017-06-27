@@ -1,8 +1,8 @@
-import {Stream, TwitchUser} from "./support/twitchdata";
-import {AppData, UserData, UserSettings} from "./support/userdata";
-import {Message, MessageType, Messenger} from "./support/messaging";
-import {createTab, isEmptyObj} from "./support/helpers";
-import {Api} from "./support/api";
+import {Stream, TwitchUser} from "./data/twitchdata";
+import {AppData, AppStateFlags, PrevNext, UserData, UserSettings} from "./data/localdata";
+import {Message, MessageType, Messenger} from "./utils/messaging";
+import {createTab, isEmptyObj} from "./utils/helpers";
+import {Api} from "./utils/api";
 import Tab = chrome.tabs.Tab;
 
 let userData: UserData = new UserData();
@@ -16,20 +16,19 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
     switch (msg.type) {
         case MessageType.SET_TWITCH_USER_DATA:
             onUserDataReceived(<TwitchUser> msg.data).then(() => {
-                openNextStream();
+                if (appData.flags & AppStateFlags.WaitingForData) {
+                    openNextStream();
+                    appData.flags &= ~AppStateFlags.WaitingForData;
+                }
             });
             break;
 
         case MessageType.SET_USER_SETTINGS:
             setUserSettings(<UserSettings> msg.data);
-            if(appData.waitingForData) {
-                openNextStream();
-                appData.waitingForData = false;
-            }
             break;
 
         case MessageType.IS_STARTED:
-            sendResponse(appData.started);
+            sendResponse(appData.flags & AppStateFlags.Started);
             break;
 
         case MessageType.GET_USER_DATA:
@@ -45,8 +44,8 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
             break;
 
         case MessageType.PLAY_STOP:
-            appData.started = !appData.started;
-            if (appData.started) {
+            // flip started bit, returns new bit value
+            if (appData.flags ^= AppStateFlags.Started) {
                 userData.id ? start() : loadUserSettings().then(() => start());
             } else {
                 end();
@@ -66,18 +65,22 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
             break;
 
         case MessageType.SET_SHOW_LOGIN_MESSAGE:
-            appData.shouldShowLoginMessage = true;
-            appData.waitingForData = true;
+            appData.flags |= AppStateFlags.ShowLoginMessage | AppStateFlags.WaitingForData;
             sendResponse(true);
             break;
 
         case MessageType.SHOULD_SHOW_LOGIN_MESSAGE:
-            sendResponse(appData.shouldShowLoginMessage);
-            appData.shouldShowLoginMessage = false;
+            sendResponse(appData.flags & AppStateFlags.ShowLoginMessage);
+            appData.flags &= ~AppStateFlags.ShowLoginMessage;
             break;
 
         case MessageType.HAS_PREV_NEXT:
-            sendResponse({prev:!!appData.streamHistory.length, next:appData.started});
+            getHasNextStream()
+                .then((next) => {
+                        let started = !!(appData.flags & AppStateFlags.Started);
+                        sendResponse(new PrevNext(!!appData.streamHistory.length && started, next && started))
+                    }
+                );
             break;
 
         default:
@@ -87,11 +90,11 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
 });
 
 function start() {
-    if (Messenger.tabId == null) {
+    if (Messenger.tabId == undefined) {
         if (userData.id) {
             // if we already have user data go straight to top priority stream
             getNextStream().then((stream: Stream) => {
-                createTab(appData.firstRun, stream.url).then((tab: Tab) => {
+                createTab(!!(appData.flags & AppStateFlags.FirstRun), stream.url).then((tab: Tab) => {
                     Messenger.tabId = tab.id;
                     appData.currentStream = stream;
                     Messenger.sendToTab({type: MessageType.OPEN_STREAM, data: stream});
@@ -99,9 +102,9 @@ function start() {
             });
         } else {
             // if there is no user data, open "/" on twitch so getTwitchUserData executes
-            createTab(appData.firstRun).then((tab: Tab) => {
+            createTab(!!(appData.flags & AppStateFlags.FirstRun)).then((tab: Tab) => {
                 Messenger.tabId = tab.id;
-                appData.waitingForData = true;
+                appData.flags |= AppStateFlags.WaitingForData;
                 Messenger.sendToTab({type: MessageType.EXTRACT_TWITCH_USER, data: "void"});
             });
         }
@@ -109,14 +112,14 @@ function start() {
         if (userData.id) {
             openNextStream();
         } else {
-            appData.waitingForData = true;
+            appData.flags |= AppStateFlags.WaitingForData;
             Messenger.sendToTab({type: MessageType.EXTRACT_TWITCH_USER, data: "void"});
         }
     }
 }
 
 function end() {
-    Messenger.tabId = null;
+    Messenger.tabId = undefined;
     appData = new AppData();
 }
 
@@ -127,7 +130,7 @@ function openNextStream() {
             type: MessageType.OPEN_STREAM,
             data: stream
         });
-        appData.firstRun = false;
+        appData.flags &= ~AppStateFlags.FirstRun;
     });
 }
 
@@ -146,6 +149,14 @@ function getNextStream(): Promise<Stream> {
         }).catch((err) => {
             reject(err);
         });
+    });
+}
+
+function getHasNextStream(): Promise<boolean> {
+    return new Promise((resolve) => {
+        getNextStream().then(() => {
+            resolve(true);
+        }).catch(e => resolve(false));
     });
 }
 
@@ -202,7 +213,7 @@ function setUserSettings(settings: UserSettings) {
     });
 }
 
-function loadUserSettings(data = null) {
+function loadUserSettings(data = undefined) {
     if (data) {
         userData = data;
 
@@ -241,8 +252,8 @@ function addLiveFollowedStreams(streams) {
     }
 }
 
-chrome.runtime.onInstalled.addListener(function(details){
-    if(details.reason == "install") {
-        appData.firstRun = true;
+chrome.runtime.onInstalled.addListener(function (details) {
+    if (details.reason == "install") {
+        appData.flags |= AppStateFlags.FirstRun;
     }
 });

@@ -1,6 +1,6 @@
 import * as $ from "jquery";
-import {MessageType, Messenger} from "./support/messaging";
-import {UserData, UserSettings} from "./support/userdata";
+import {MessageType, Messenger} from "./utils/messaging";
+import {UserData, UserSettings} from "./data/localdata";
 import OnDragEventHandler = JQuerySortable.OnDragEventHandler;
 import id = chrome.runtime.id;
 

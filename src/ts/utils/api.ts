@@ -1,5 +1,5 @@
-import {UserData} from "./userdata";
-import {Stream} from "./twitchdata";
+import {UserData} from "../data/localdata";
+import {Stream} from "../data/twitchdata";
 import * as $ from "jquery";
 
 export class Api {

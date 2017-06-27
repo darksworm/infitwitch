@@ -1,4 +1,4 @@
-import {MessageType, Messenger} from "./support/messaging";
+import {MessageType, Messenger} from "../utils/messaging";
 
 $(document).ready(() => {
         Messenger.sendToBackground({type: MessageType.SHOULD_SHOW_LOGIN_MESSAGE, data: "void"}, (shouldShowMsg: any) => {

@@ -1,9 +1,9 @@
 import * as $ from "jquery";
-import {Message, MessageType, Messenger} from "./support/messaging";
-import {addScript} from "./support/helpers";
-import {Stream, TwitchUser} from "./support/twitchdata";
+import {Message, MessageType, Messenger} from "../utils/messaging";
+import {addScript} from "../utils/helpers";
+import {Stream, TwitchUser} from "../data/twitchdata";
 
-let currentStream: Stream = null;
+let currentStream: Stream = undefined;
 
 document.addEventListener(MessageType.CATCH_USER_DATA.toString(), onDataResponse);
 
@@ -74,9 +74,9 @@ function getLiveIndicator(): Promise<HTMLElement> {
         } else {
             let r = (resolve) => {
                 let i = $('.player-streamstatus__label');
-                i.length ? resolve(i[0]) : setTimeout(r.bind(null, resolve), 550);
+                i.length ? resolve(i[0]) : setTimeout(r.bind(undefined, resolve), 550);
             };
-            setTimeout(r.bind(null, resolve), 550);
+            setTimeout(r.bind(undefined, resolve), 550);
         }
     });
 }

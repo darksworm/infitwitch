@@ -29,13 +29,13 @@ export function createTab(firstRun: boolean = false, url: string = "https://www.
     return new Promise((resolve) => {
         chrome.tabs.query({url: ["https://www.twitch.tv/*"], currentWindow: true}, (tabs: Tab[]) => {
             if (tabs.length != 0) {
-                let selectedTab = null;
+                let selectedTab = undefined;
                 for (let tab of tabs) {
                     if (tab.active) {
                         selectedTab = tab;
                     }
                 }
-                if (null === selectedTab) {
+                if (undefined === selectedTab) {
                     selectedTab = tabs[0];
                 }
                 let settings: any = {active: true};
