@@ -51,20 +51,19 @@ $(document).ready(() => {
 
             if (window.location.pathname == '/') {
                 getTwitchUserData();
+            } else {
+                addScript({
+                    textContent: 'let infitwitchInj = (() => {' +
+                    'try{' +
+                    'let channel = window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.channel");' +
+                    'document.dispatchEvent(new CustomEvent(\'' + MessageType[MessageType.PLAYER_CHANNEL_UPDATE].toString() + '\', ' +
+                    '{detail:{id:channel.id, live:channel.playerIsLive}}));' +
+                    '}catch(e){}setTimeout(infitwitchInj, 5000)' +
+                    '});' +
+                    'infitwitchInj();'
+                }, false);
+                getPlayer().then(() => openTheaterMode());
             }
-
-            addScript({
-                textContent: 'let f = (() => {' +
-                'try{' +
-                'let channel = window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.channel");' +
-                'document.dispatchEvent(new CustomEvent(\'' + MessageType[MessageType.PLAYER_CHANNEL_UPDATE].toString() + '\', ' +
-                '{detail:{id:channel.id, live:channel.playerIsLive}}));' +
-                '}catch(e){}setTimeout(f, 5000)' +
-                '});' +
-                'f();'
-            }, false);
-
-
         });
     }
 );
