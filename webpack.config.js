@@ -3,6 +3,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const BabiliPlugin = require("babili-webpack-plugin");
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
 const path = require('path');
+const WebpackStrip = require('strip-loader');
 
 const extractSass = new ExtractTextPlugin({
     filename: "../css/[name].css"
@@ -33,7 +34,12 @@ module.exports = {
             {
                 exclude: /node_modules/,
                 test: /\.tsx?$/,
-                loader: 'ts-loader'
+                use: [{
+                    loader: 'ts-loader'
+                }, {
+                    // removes debug logging
+                    loader: WebpackStrip.loader('console.log')
+                }]
             },
             {
                 test: require.resolve("jquery"),
