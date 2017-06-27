@@ -17,6 +17,12 @@ export class Stream {
 
         return i;
     }
+
+    static fromName(name) {
+        let i = new Stream();
+        i.name = name;
+        return i;
+    }
 }
 
 export class TwitchUser {

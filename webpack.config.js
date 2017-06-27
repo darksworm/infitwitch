@@ -36,10 +36,12 @@ module.exports = {
                 test: /\.tsx?$/,
                 use: [{
                     loader: 'ts-loader'
-                }, {
-                    // removes debug logging
-                    loader: WebpackStrip.loader('console.log')
-                }]
+                }
+                // , {
+                //     // removes debug logging
+                //     loader: WebpackStrip.loader('console.log')
+                // }
+                ]
             },
             {
                 test: require.resolve("jquery"),

@@ -3,7 +3,7 @@ import {Stream, TwitchUser} from "../data/twitchdata";
 import Tab = chrome.tabs.Tab;
 
 export enum MessageType {
-    CATCH_USER_DATA, SET_TWITCH_USER_DATA, SET_USER_SETTINGS, IS_STARTED, GET_USER_DATA, STREAM_ENDED, CLEAR_DATA,
+    CATCH_USER_DATA, SET_TWITCH_USER_DATA, SET_USER_SETTINGS, IS_STARTED, GET_USER_DATA, STREAM_ENDED, CLEAR_DATA, PLAYER_CHANNEL_UPDATE,
     PLAY_STOP, PREVIOUS, NEXT, OPEN_STREAM, EXTRACT_TWITCH_USER, SET_SHOW_LOGIN_MESSAGE, SHOULD_SHOW_LOGIN_MESSAGE, HAS_PREV_NEXT
 }
 
@@ -52,7 +52,7 @@ export class Messenger {
             throw new Error("Null message passed");
         } else {
             if (!(message.data.constructor.name == MESSAGE_PARAMETER_TYPES.get(message.type) || message.data == "void" && "void" == MESSAGE_PARAMETER_TYPES.get(message.type))) {
-                throw new Error("Wrong data type, got: " + message.data.constructor.name + " expected: " + MESSAGE_PARAMETER_TYPES.get(message.type));
+                throw new Error("Wrong data type for " + MessageType[message.type] + ", got: " + message.data.constructor.name + " expected: " + MESSAGE_PARAMETER_TYPES.get(message.type));
             }
         }
     }
