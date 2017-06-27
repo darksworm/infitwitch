@@ -75,8 +75,6 @@ module.exports = {
             {from: 'manifest.json', to: '../manifest.json'}
         ]),
 
-        new BabiliPlugin({
-            "keepClassName": true
-        }, {})
+        new BabiliPlugin({}, {})
     ]
 };

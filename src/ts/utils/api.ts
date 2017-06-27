@@ -4,15 +4,7 @@ import * as $ from "jquery";
 
 export class Api {
     private static FOLLOW_REQ_QUERY_LIMIT = 100;
-    private static _clientId = 'szf668t77136wvmtyzfrzmv5p73bnfn';
-
-    static get clientId(): string {
-        return this._clientId;
-    }
-
-    static set clientId(value: string) {
-        this._clientId = value;
-    }
+    private static clientId = 'szf668t77136wvmtyzfrzmv5p73bnfn';
 
     public static getFollows(userData: UserData, offset = 0): Promise<UserData> {
         let followsAdded = Object.keys(userData.follows).length ? Object.keys(userData.follows).length : offset;

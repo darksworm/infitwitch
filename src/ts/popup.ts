@@ -9,6 +9,7 @@ $(document).ready(() => {
     let settingsBtn = $('.btn-settings');
     let prevNext: PrevNext = {prev: false, next: false};
 
+    onPrevNextReceived(prevNext);
     updatePrevNext();
 
     playBtn.click(() => {
@@ -47,11 +48,13 @@ $(document).ready(() => {
     });
 
     function updatePrevNext() {
-        Messenger.sendToBackground({type: MessageType.HAS_PREV_NEXT, data: "void"}, (data: PrevNext) => {
-            prevNext = data;
-            nextBtn.css("backgroundColor", data.next ? "whitesmoke" : "gray");
-            prevBtn.css("backgroundColor", data.prev ? "whitesmoke" : "gray");
-        });
+        Messenger.sendToBackground({type: MessageType.HAS_PREV_NEXT, data: "void"}, onPrevNextReceived);
+    }
+
+    function onPrevNextReceived(data: PrevNext) {
+        prevNext = data;
+        nextBtn.css("backgroundColor", data.next ? "whitesmoke" : "gray");
+        prevBtn.css("backgroundColor", data.prev ? "whitesmoke" : "gray");
     }
 });
 

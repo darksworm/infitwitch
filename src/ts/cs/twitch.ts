@@ -18,7 +18,7 @@ function onDataResponse(data: any) {
                 window.location.href = "https://www.twitch.tv/login";
             });
         } else {
-            console.log("sometingwong")
+            console.log("Something went horribly wrong...")
         }
     } else {
         Messenger.sendToBackground({

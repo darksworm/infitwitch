@@ -28,11 +28,13 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
             break;
 
         case MessageType.IS_STARTED:
-            sendResponse(appData.flags & AppStateFlags.Started);
+            sendResponse(appData.flags & AppStateFlags.Running);
             break;
 
         case MessageType.GET_USER_DATA:
-            getUserData().then((data) => sendResponse($.extend({}, data)));
+            getUserData().then((data) =>
+                sendResponse(data)
+            );
             break;
 
         case MessageType.NEXT:
@@ -45,7 +47,7 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
 
         case MessageType.PLAY_STOP:
             // flip started bit, returns new bit value
-            if (appData.flags ^= AppStateFlags.Started) {
+            if (appData.flags ^= AppStateFlags.Running) {
                 userData.id ? start() : loadUserSettings().then(() => start());
             } else {
                 end();
@@ -77,10 +79,32 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
         case MessageType.HAS_PREV_NEXT:
             getHasNextStream()
                 .then((next) => {
-                        let started = !!(appData.flags & AppStateFlags.Started);
-                        sendResponse(new PrevNext(!!appData.streamHistory.length && started, next && started))
+                        let started = !!(appData.flags & AppStateFlags.Running);
+                        try {
+                            sendResponse(new PrevNext(!!appData.streamHistory.length && started, next && started))
+                        } catch (e) {
+                            /**
+                             * When changing active tab, the popup will get closed, so an exception will be thrown
+                             * when we cannot send the response to it as it no longer exists.
+                             * This however doesn't seem to catch the exception in firefox
+                             */
+                        }
                     }
                 );
+            break;
+
+        case MessageType.CLEAR_DATA:
+            chrome.storage.local.clear(() => {
+                let error = chrome.runtime.lastError;
+                if (error) {
+                    console.error(error);
+                    sendResponse(false);
+                } else {
+                    end();
+                    userData = new UserData();
+                    sendResponse(true);
+                }
+            });
             break;
 
         default:
@@ -140,7 +164,7 @@ function getNextStream(): Promise<Stream> {
             addLiveFollowedStreams(data);
             for (let priority in userData.settings.priorityList) {
                 let stream = userData.follows[userData.settings.priorityList[priority]];
-                if (stream.live && !streamRecentlyEnded(stream.id)) {
+                if (stream.live && !isStreamRecentlyEnded(stream.id)) {
                     resolve(Stream.fromAny(userData.follows[userData.settings.priorityList[priority]]));
                     return;
                 }
@@ -160,7 +184,7 @@ function getHasNextStream(): Promise<boolean> {
     });
 }
 
-function streamRecentlyEnded(id: number) {
+function isStreamRecentlyEnded(id: number): boolean {
     let now = Date.now();
     for (let stream in appData.recentlyEndedStreams) {
         if (+stream === id) {
@@ -194,12 +218,13 @@ function onUserDataReceived(user: TwitchUser) {
         }
         userData.id = user.id;
         userData.login = user.login;
+
         Api.getFollows(userData)
-            .then((userData) =>
+            .then((userData) => {
                 loadUserSettings(userData).then(() =>
                     resolve(true)
                 )
-            ).catch((err) => {
+            }).catch((err) => {
                 reject(err);
             }
         );
@@ -216,9 +241,8 @@ function setUserSettings(settings: UserSettings) {
 function loadUserSettings(data = undefined) {
     if (data) {
         userData = data;
-
     }
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (Object.keys(userData.settings.priorityList).length) {
             return;
         }
@@ -236,7 +260,7 @@ function loadUserSettings(data = undefined) {
 }
 
 function setDefaultSettings() {
-    userData.settings.priorityList = new Map();
+    userData.settings.priorityList = <Map<number, number>>{};
     let i = 0;
     for (let id in userData.follows) {
         userData.settings.priorityList[i++] = +id;
@@ -252,8 +276,21 @@ function addLiveFollowedStreams(streams) {
     }
 }
 
-chrome.runtime.onInstalled.addListener(function (details) {
+/**
+ * Add FirstRun flag after installed
+ * When first starting, if a twitch tab exists, we force it to reload,
+ * to inject the twitch.ts content script
+ */
+chrome.runtime.onInstalled.addListener((details) => {
     if (details.reason == "install") {
         appData.flags |= AppStateFlags.FirstRun;
+    }
+});
+
+// when running stop when used tab is closed
+chrome.tabs.onRemoved.addListener((tabId) => {
+    if (tabId == Messenger.tabId) {
+        appData.flags &= ~AppStateFlags.Running;
+        Messenger.tabId = undefined;
     }
 });

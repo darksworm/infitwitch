@@ -3,7 +3,7 @@ import {Stream, TwitchUser} from "../data/twitchdata";
 import Tab = chrome.tabs.Tab;
 
 export enum MessageType {
-    CATCH_USER_DATA, SET_TWITCH_USER_DATA, SET_USER_SETTINGS, IS_STARTED, GET_USER_DATA, STREAM_ENDED,
+    CATCH_USER_DATA, SET_TWITCH_USER_DATA, SET_USER_SETTINGS, IS_STARTED, GET_USER_DATA, STREAM_ENDED, CLEAR_DATA,
     PLAY_STOP, PREVIOUS, NEXT, OPEN_STREAM, EXTRACT_TWITCH_USER, SET_SHOW_LOGIN_MESSAGE, SHOULD_SHOW_LOGIN_MESSAGE, HAS_PREV_NEXT
 }
 
@@ -21,7 +21,8 @@ const MESSAGE_PARAMETER_TYPES: Map<MessageType, string> = new Map<MessageType, s
     [MessageType.NEXT, "void"],
     [MessageType.SET_SHOW_LOGIN_MESSAGE, "void"],
     [MessageType.SHOULD_SHOW_LOGIN_MESSAGE, "void"],
-    [MessageType.HAS_PREV_NEXT, "void"]
+    [MessageType.HAS_PREV_NEXT, "void"],
+    [MessageType.CLEAR_DATA, "void"]
 ]);
 
 export interface Message {

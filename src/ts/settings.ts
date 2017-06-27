@@ -2,24 +2,25 @@ import * as $ from "jquery";
 import {MessageType, Messenger} from "./utils/messaging";
 import {UserData, UserSettings} from "./data/localdata";
 import OnDragEventHandler = JQuerySortable.OnDragEventHandler;
-import id = chrome.runtime.id;
-
-$(document).ready(() => {
-    goTurbo();
-});
 
 let streamersCont;
 let userData: UserData;
 let filterInput;
+let clearSettingsBtn;
 
-function goTurbo() {
+$(document).ready(() => {
     streamersCont = $('#streams');
+
     filterInput = $('#filter');
     filterInput.keyup(filterData);
+
+    clearSettingsBtn = $('#clearSettings');
+    clearSettingsBtn.click(clearSettings);
+
     getUserData().then(() => {
         populateStreams();
     });
-}
+});
 
 function filterData() {
     let str = filterInput.val();
@@ -121,6 +122,14 @@ function saveSettings() {
     settings.priorityList = userData.settings.priorityList;
 
     Messenger.sendToBackground({type: MessageType.SET_USER_SETTINGS, data: settings});
+}
+
+function clearSettings() {
+    Messenger.sendToBackground({type: MessageType.CLEAR_DATA, data: "void"}, (response) => {
+        if(response) {
+            window.location.reload();
+        }
+    });
 }
 
 function createStreamElem(streamer, position) {

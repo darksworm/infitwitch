@@ -3,12 +3,12 @@ import {Stream} from "./twitchdata";
 export class UserData {
     id: number = undefined;
     login: string = undefined;
-    follows: Map<number, Stream> = new Map();
+    follows: Map<number, Stream> = <Map<number, Stream>>{};
     settings: UserSettings = new UserSettings();
 }
 
 export class UserSettings {
-    priorityList: Map<number, number> = new Map();
+    priorityList: Map<number, number> = <Map<number, number>>{};
 }
 
 export class AppData {
@@ -21,7 +21,7 @@ export class AppData {
 
 export const enum AppStateFlags {
     None = 0,
-    Started = 1 << 0,
+    Running = 1 << 0,
     ShowLoginMessage = 1 << 1,
     WaitingForData = 1 << 2,
     FirstRun = 1 << 3
