@@ -45,7 +45,7 @@ export function createTab(firstRun: boolean = false, url: string = "https://www.
                 if (firstRun) {
                     settings.url = "https://www.twitch.tv/";
                 }
-                chrome.tabs.update(selectedTab.id, {active: true}, (tab: Tab) =>
+                chrome.tabs.update(selectedTab.id, settings, (tab: Tab) =>
                     resolve(tab)
                 );
             } else {
