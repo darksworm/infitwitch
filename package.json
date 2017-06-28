@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "./node_modules/.bin/webpack",
-    "watch": "./node_modules/.bin/webpack -w"
+    "watch": "./node_modules/.bin/webpack -w",
+    "compress": "rm -f ./dist.zip && rm -f ./dist/js/styles.js && cd ./dist && zip -r ../dist.zip .",
+    "compress-source": "rm -f ./source.zip && zip -r ./source.zip . -x .\\* -x \\*.pem -x \\*.zip -x node_modules/\\* -x dist/\\*",
+    "builds": "npm run compress | npm run compress-source"
   },
   "author": "",
   "license": "ISC",

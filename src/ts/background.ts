@@ -15,12 +15,7 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
     console.log("GOT:", MessageType[msg.type], msg.data);
     switch (msg.type) {
         case MessageType.SET_TWITCH_USER_DATA:
-            onUserDataReceived(<TwitchUser> msg.data).then(() => {
-                if (appData.flags & AppStateFlags.WaitingForData) {
-                    openNextStream();
-                    appData.flags &= ~AppStateFlags.WaitingForData;
-                }
-            });
+            onUserDataReceived(<TwitchUser> msg.data).then(() => handleReceivedData());
             break;
 
         case MessageType.SET_USER_SETTINGS:
@@ -113,7 +108,26 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
     return true;
 });
 
+function handleReceivedData() {
+    if (appData.flags & AppStateFlags.WaitingForData) {
+        chrome.tabs.create({'url': chrome.extension.getURL('static/template/settings.html?new')}, (tab: Tab) => {
+            let f = ((tabId) => {
+                if(tabId == tab.id) {
+                    openNextStream();
+                    chrome.tabs.onRemoved.removeListener(f);
+                }
+            });
+
+            chrome.tabs.onRemoved.addListener(f);
+            appData.flags &= ~AppStateFlags.WaitingForData;
+        });
+    }
+}
+
 function start() {
+    if(!userData.id) {
+        appData.flags |= AppStateFlags.WaitingForData;
+    }
     if (Messenger.tabId == undefined) {
         if (userData.id) {
             // if we already have user data go straight to top priority stream
@@ -128,7 +142,6 @@ function start() {
             // if there is no user data, open "/" on twitch so getTwitchUserData executes
             createTab(!!(appData.flags & AppStateFlags.FirstRun)).then((tab: Tab) => {
                 Messenger.tabId = tab.id;
-                appData.flags |= AppStateFlags.WaitingForData;
                 Messenger.sendToTab({type: MessageType.EXTRACT_TWITCH_USER, data: "void"});
             });
         }
@@ -136,7 +149,6 @@ function start() {
         if (userData.id) {
             openNextStream();
         } else {
-            appData.flags |= AppStateFlags.WaitingForData;
             Messenger.sendToTab({type: MessageType.EXTRACT_TWITCH_USER, data: "void"});
         }
     }

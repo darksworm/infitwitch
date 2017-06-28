@@ -19,6 +19,10 @@ $(document).ready(() => {
 
     getUserData().then(() => {
         populateStreams();
+        if(window.location.href.endsWith("?new")) {
+            alert("Rearrange streamers by dragging them to create a priority list. " +
+                "When you're done, just close this tab; the changes will be saved automatically and your streams will start!")
+        }
     });
 });
 
