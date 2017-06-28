@@ -1,10 +1,12 @@
 import {UserSettings} from "../data/localdata";
 import {Stream, TwitchUser} from "../data/twitchdata";
 import Tab = chrome.tabs.Tab;
+import {InfitwitchError} from "./infitwitcherror";
 
 export enum MessageType {
-    CATCH_USER_DATA, SET_TWITCH_USER_DATA, SET_USER_SETTINGS, IS_STARTED, GET_USER_DATA, STREAM_ENDED, CLEAR_DATA, PLAYER_CHANNEL_UPDATE,
-    PLAY_STOP, PREVIOUS, NEXT, OPEN_STREAM, EXTRACT_TWITCH_USER, SET_SHOW_LOGIN_MESSAGE, SHOULD_SHOW_LOGIN_MESSAGE, HAS_PREV_NEXT
+    CATCH_USER_DATA, SET_TWITCH_USER_DATA, SET_USER_SETTINGS, IS_STARTED, GET_USER_DATA, STREAM_ENDED, CLEAR_DATA,
+    PLAYER_CHANNEL_UPDATE, PLAY_STOP, PREVIOUS, NEXT, OPEN_STREAM, EXTRACT_TWITCH_USER, SET_SHOW_LOGIN_MESSAGE,
+    SHOULD_SHOW_LOGIN_MESSAGE, HAS_PREV_NEXT, GET_ERRORS, DISMISS_ERROR
 }
 
 const MESSAGE_PARAMETER_TYPES: Map<MessageType, string> = new Map<MessageType, string>([
@@ -22,7 +24,9 @@ const MESSAGE_PARAMETER_TYPES: Map<MessageType, string> = new Map<MessageType, s
     [MessageType.SET_SHOW_LOGIN_MESSAGE, "void"],
     [MessageType.SHOULD_SHOW_LOGIN_MESSAGE, "void"],
     [MessageType.HAS_PREV_NEXT, "void"],
-    [MessageType.CLEAR_DATA, "void"]
+    [MessageType.CLEAR_DATA, "void"],
+    [MessageType.GET_ERRORS, "void"],
+    [MessageType.DISMISS_ERROR, InfitwitchError.name]
 ]);
 
 export interface Message {

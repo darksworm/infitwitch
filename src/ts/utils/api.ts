@@ -1,6 +1,7 @@
 import {UserData} from "../data/localdata";
 import {Stream} from "../data/twitchdata";
 import * as $ from "jquery";
+import {InfitwitchError} from "./infitwitcherror";
 
 export class Api {
     private static FOLLOW_REQ_QUERY_LIMIT = 100;
@@ -24,18 +25,21 @@ export class Api {
                 },
                 timeout: 30000,
                 success: (data) => {
-                    userData = Api.addFollows(data.follows, userData);
-                    followsAdded += data.follows.length;
-                    if (offset + followsAdded < data._total && Api.FOLLOW_REQ_QUERY_LIMIT < data._total) {
-                        Api.getFollows(userData, offset + followsAdded + 1).then(() => resolve(userData));
+                    if (data.error) {
+                        reject(new InfitwitchError("Error!", Api.getErrorMessage()));
                     } else {
-                        resolve(userData);
+                        userData = Api.addFollows(data.follows, userData);
+                        followsAdded += data.follows.length;
+                        if (offset + followsAdded < data._total && Api.FOLLOW_REQ_QUERY_LIMIT < data._total) {
+                            Api.getFollows(userData, offset + followsAdded + 1).then(() => resolve(userData));
+                        } else {
+                            resolve(userData);
+                        }
                     }
                 },
-                error: ({status, responseJSON}) => reject({
-                    status,
-                    data: responseJSON
-                })
+                error: (jqXHR, exception) => {
+                    reject(new InfitwitchError("Error!", Api.getErrorMessage(jqXHR,exception)))
+                }
             })
         );
     }
@@ -74,13 +78,29 @@ export class Api {
                 },
                 timeout: 30000,
                 success: (data) => {
-                    resolve(data.streams);
+                    if (data.error) {
+                        reject(new InfitwitchError("Error!", Api.getErrorMessage()));
+                    } else {
+                        resolve(data.streams);
+                    }
                 },
-                error: ({status, responseJSON}) => reject({
-                    status,
-                    data: responseJSON
-                })
+                error: (jqXHR, exception) => {
+                    reject(new InfitwitchError("Error!", Api.getErrorMessage(jqXHR, exception)));
+                }
             })
         );
+    }
+
+    private static getErrorMessage(jqXHR?, exception?): string {
+        if(!jqXHR && !exception) {
+            return "Couldn't retrieve data from Twitch API."
+        }
+        let msg = 'Couldn\'t retrieve data from Twitch API.';
+
+        if (jqXHR.status === 0) {
+            msg = 'Couldn\'t connect to twitch API. Please verify your network connection!';
+        }
+
+        return msg;
     }
 }

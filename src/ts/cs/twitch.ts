@@ -32,9 +32,9 @@ function onDataResponse(data: any) {
 
 function onChannelData(data: CustomEvent) {
     if(running) {
-        if (data.detail.id != currentStream.name || !data.detail.live) {
+        if (data.detail.id != currentStream.name || data.detail.live === false) {
             getNextStream();
-        } else if (!data.detail.theatre) {
+        } else if (!data.detail.theatre && data.detail.playerReadyState != 0) {
             openTheaterMode();
         }
     }
@@ -66,8 +66,9 @@ $(document).ready(() => {
                 'try{' +
                 'let channel = window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.channel");' +
                 'let theatre = window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.player").theatre;' +
+                'let readyState = window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.player").getReadyState();' +
                 'document.dispatchEvent(new CustomEvent(\'' + MessageType[MessageType.PLAYER_CHANNEL_UPDATE].toString() + '\', ' +
-                '{detail:{id:channel.id, live:channel.playerIsLive, theatre: theatre}}));' +
+                '{detail:{id:channel.id, live:channel.playerIsLive, theatre: theatre, playerReadyState: readyState}}));' +
                 '}catch(e){}setTimeout(infitwitchInj, 5000)' +
                 '});' +
                 'infitwitchInj();'

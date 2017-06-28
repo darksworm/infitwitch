@@ -52,10 +52,42 @@
 	}
 
 	#bot-btn-cont {
+		margin-top: 8px;
+
 		text-align: center;
 		.btn-settings {
 			width: 12.5vw;
 			height: 12.5vw;
+		}
+	}
+
+	#error-cont {
+		margin-top: 8px;
+		text-align: center;
+
+		.error {
+			position: relative;
+			width: 100%;
+			color: white;
+			background: $red-accent;
+			box-shadow: 0 0 2px white;
+			.message {
+				font-weight:bold;
+				margin-bottom: 2px;
+			}
+			.time {
+				margin-top: 2px;
+				font-size: 10px;
+			}
+			.dismiss {
+				position: absolute;
+				top: 3px;
+				right: 3px;
+				color: rgba(255,255,255, 0.6);
+				&:hover {
+					cursor: pointer;
+				}
+			}
 		}
 	}
 }

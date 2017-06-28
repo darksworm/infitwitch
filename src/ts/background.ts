@@ -3,6 +3,7 @@ import {AppData, AppStateFlags, PrevNext, UserData, UserSettings} from "./data/l
 import {Message, MessageType, Messenger} from "./utils/messaging";
 import {createTab, isEmptyObj} from "./utils/helpers";
 import {Api} from "./utils/api";
+import {InfitwitchError} from "./utils/infitwitcherror";
 import Tab = chrome.tabs.Tab;
 
 let userData: UserData = new UserData();
@@ -10,10 +11,17 @@ let userData: UserData = new UserData();
 const RECENTLY_OFFLINE_TIME_LIMIT = 300000;
 
 let appData = new AppData();
+let errors: InfitwitchError[] = [];
 
 chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendResponse) {
     console.log("GOT:", MessageType[msg.type], msg.data);
     switch (msg.type) {
+        case MessageType.GET_ERRORS:
+            sendResponse(errors);
+            break;
+        case MessageType.DISMISS_ERROR:
+            sendResponse(dismissError(msg.data));
+            break;
         case MessageType.SET_TWITCH_USER_DATA:
             onUserDataReceived(<TwitchUser> msg.data).then(() => handleReceivedData());
             break;
@@ -108,11 +116,31 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
     return true;
 });
 
+function onApiError(data: InfitwitchError) {
+    errors.push(data);
+
+    appData.flags &= ~AppStateFlags.Running;
+
+    chrome.browserAction.setBadgeBackgroundColor({color: [220, 53, 34, 255]});
+    chrome.browserAction.setBadgeText({text: errors.length.toString()});
+}
+
+function dismissError(error:InfitwitchError) {
+    for(let i in errors) {
+        if(errors[i].time == error.time){
+            delete errors[i];
+            chrome.browserAction.setBadgeText({text: errors.length ? errors.length.toString() : ""});
+            return true;
+        }
+    }
+    return false;
+}
+
 function handleReceivedData() {
     if (appData.flags & AppStateFlags.WaitingForData) {
         chrome.tabs.create({'url': chrome.extension.getURL('static/template/settings.html?new')}, (tab: Tab) => {
             let f = ((tabId) => {
-                if(tabId == tab.id) {
+                if (tabId == tab.id) {
                     openNextStream();
                     chrome.tabs.onRemoved.removeListener(f);
                 }
@@ -125,7 +153,7 @@ function handleReceivedData() {
 }
 
 function start() {
-    if(!userData.id) {
+    if (!userData.id) {
         appData.flags |= AppStateFlags.WaitingForData;
     }
     if (Messenger.tabId == undefined) {
@@ -182,8 +210,9 @@ function getNextStream(): Promise<Stream> {
                 }
             }
             reject();
-        }).catch((err) => {
-            reject(err);
+        }).catch((error) => {
+            onApiError(error);
+            reject();
         });
     });
 }
@@ -231,15 +260,15 @@ function onUserDataReceived(user: TwitchUser) {
         userData.id = user.id;
         userData.login = user.login;
 
-        Api.getFollows(userData)
-            .then((userData) => {
-                loadUserSettings(userData).then(() =>
-                    resolve(true)
-                )
-            }).catch((err) => {
-                reject(err);
-            }
-        );
+        Api.getFollows(userData).then((userData) => {
+            loadUserSettings(userData).then(() =>
+                resolve(true)
+            )
+        }).catch((error) => {
+            userData = new UserData();
+            onApiError(error);
+            reject();
+        });
     });
 }
 
