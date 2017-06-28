@@ -9,6 +9,41 @@ const extractSass = new ExtractTextPlugin({
     filename: "../css/[name].css"
 });
 
+let plugins = [
+    extractSass,
+    // pack common vendor files
+    new webpack.optimize.CommonsChunkPlugin({
+        name: 'vendor',
+        minChunks: Infinity
+    }),
+
+    // exclude locale files in moment
+    new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+
+    new CopyWebpackPlugin([
+        {from: 'static/template/*', to: '../'},
+        {from: 'static/img/*.png', to: '../'},
+        {from: 'manifest.json', to: '../manifest.json'}
+    ])
+];
+
+let tsLoader = {
+    exclude: /node_modules/,
+    test: /\.tsx?$/,
+    use: [{
+        loader: 'ts-loader'
+    }]
+};
+
+if (process.env.NODE_ENV !== 'dev') {
+    tsLoader.use.push({
+        // removes debug logging
+        loader: WebpackStrip.loader('console.log')
+    });
+
+    plugins.push(new BabiliPlugin({}, {}));
+}
+
 module.exports = {
     entry: {
         settings: path.join(__dirname, 'src/ts/settings.ts'),
@@ -26,23 +61,12 @@ module.exports = {
         ],
     },
     output: {
-        path: path.join(__dirname, 'dist/js'),
+        path: path.join(__dirname, 'dist/unpacked/js'),
         filename: '[name].js'
     },
     module: {
         loaders: [
-            {
-                exclude: /node_modules/,
-                test: /\.tsx?$/,
-                use: [{
-                    loader: 'ts-loader'
-                }
-                , {
-                    // removes debug logging
-                    loader: WebpackStrip.loader('console.log')
-                }
-                ]
-            },
+            tsLoader,
             {
                 test: require.resolve("jquery"),
                 loader: "expose-loader?$!expose-loader?jQuery"
@@ -66,23 +90,5 @@ module.exports = {
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
     },
-    plugins: [
-        extractSass,
-        // pack common vendor files
-        new webpack.optimize.CommonsChunkPlugin({
-            name: 'vendor',
-            minChunks: Infinity
-        }),
-
-        // exclude locale files in moment
-        new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
-
-        new CopyWebpackPlugin([
-            {from: 'static/template/*', to: '../'},
-            {from: 'static/img/*.png', to: '../'},
-            {from: 'manifest.json', to: '../manifest.json'}
-        ]),
-
-        new BabiliPlugin({}, {})
-    ]
+    plugins: plugins
 };

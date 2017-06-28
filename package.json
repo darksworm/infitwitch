@@ -4,11 +4,12 @@
   "description": "infitwitch",
   "main": "index.js",
   "scripts": {
-    "build": "./node_modules/.bin/webpack",
-    "watch": "./node_modules/.bin/webpack -w",
-    "compress": "rm -f ./dist.zip && rm -f ./dist/js/styles.js && cd ./dist && zip -r ../dist.zip .",
-    "compress-source": "rm -f ./source.zip && zip -r ./source.zip . -x .\\* -x \\*.pem -x \\*.zip -x node_modules/\\* -x dist/\\*",
-    "builds": "npm run compress | npm run compress-source"
+    "build": "NODE_ENV=dev bash -c './node_modules/.bin/webpack'",
+    "watch": "NODE_ENV=dev bash -c './node_modules/.bin/webpack -w'",
+    "build-prod": "NODE_ENV=prod bash -c './node_modules/.bin/webpack'",
+    "compress": "rm -f ./dist/dist.zip && rm -f ./dist/unpacked/js/styles.js && cd ./dist/unpacked && zip -r ../infitwitch.zip .",
+    "compress-source": "rm -f ./source.zip && zip -r ./dist/infitwitch_source.zip . -x .\\* -x \\*.pem -x \\*.zip -x node_modules/\\* -x dist/\\*",
+    "build-prod-full": "npm run build-prod && npm run compress && npm run compress-source"
   },
   "author": "",
   "license": "ISC",

@@ -4,8 +4,8 @@
     "target": "es6",
     "noImplicitAny": false,
     "sourceMap": false,
-    "rootDir": "src",
-    "outDir": "dist/js",
+    "rootDir": "src/ts",
+    "outDir": "dist/unpacked/js",
     "noEmitOnError": true
   }
 }
