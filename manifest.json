@@ -11,6 +11,7 @@
   "permissions": [
     "activeTab",
     "https://www.twitch.tv/*",
+    "https://api.twitch.tv/kraken/*",
     "https://passport.twitch.tv/authentications/*",
     "storage",
     "tabs"

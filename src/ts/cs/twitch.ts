@@ -4,6 +4,7 @@ import {addScript} from "../utils/helpers";
 import {Stream, TwitchUser} from "../data/twitchdata";
 
 let currentStream: Stream = Stream.fromName(window.location.pathname.slice(1));
+let running: boolean = false;
 
 document.addEventListener(MessageType[MessageType.CATCH_USER_DATA].toString(), onDataResponse);
 document.addEventListener(MessageType[MessageType.PLAYER_CHANNEL_UPDATE].toString(), onChannelData);
@@ -30,8 +31,12 @@ function onDataResponse(data: any) {
 }
 
 function onChannelData(data: CustomEvent) {
-    if (data.detail.id != currentStream.name || !data.detail.live) {
-        getNextStream();
+    if(running) {
+        if (data.detail.id != currentStream.name || !data.detail.live) {
+            getNextStream();
+        } else if (!data.detail.theatre) {
+            openTheaterMode();
+        }
     }
 }
 
@@ -45,6 +50,7 @@ function getTwitchUserData() {
 
 $(document).ready(() => {
         Messenger.sendToBackground({type: MessageType.IS_STARTED, data: "void"}, (isStarted: any) => {
+            running = isStarted;
             if (!isStarted) {
                 return;
             }
@@ -52,18 +58,20 @@ $(document).ready(() => {
             if (window.location.pathname == '/') {
                 getTwitchUserData();
             } else {
-                addScript({
-                    textContent: 'let infitwitchInj = (() => {' +
-                    'try{' +
-                    'let channel = window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.channel");' +
-                    'document.dispatchEvent(new CustomEvent(\'' + MessageType[MessageType.PLAYER_CHANNEL_UPDATE].toString() + '\', ' +
-                    '{detail:{id:channel.id, live:channel.playerIsLive}}));' +
-                    '}catch(e){}setTimeout(infitwitchInj, 5000)' +
-                    '});' +
-                    'infitwitchInj();'
-                }, false);
                 getPlayer().then(() => openTheaterMode());
             }
+
+            addScript({
+                textContent: 'let infitwitchInj = (() => {' +
+                'try{' +
+                'let channel = window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.channel");' +
+                'let theatre = window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.player").theatre;' +
+                'document.dispatchEvent(new CustomEvent(\'' + MessageType[MessageType.PLAYER_CHANNEL_UPDATE].toString() + '\', ' +
+                '{detail:{id:channel.id, live:channel.playerIsLive, theatre: theatre}}));' +
+                '}catch(e){}setTimeout(infitwitchInj, 5000)' +
+                '});' +
+                'infitwitchInj();'
+            }, false);
         });
     }
 );
