@@ -1,12 +1,14 @@
-import {UserSettings} from "../data/localdata";
+import {AppData, AppStateFlags, UserSettings} from "../data/localdata";
 import {Stream, TwitchUser} from "../data/twitchdata";
-import Tab = chrome.tabs.Tab;
 import {InfitwitchError} from "./infitwitcherror";
+import {createTab} from "./helpers";
+import Tab = chrome.tabs.Tab;
+import {Logger} from "./logger";
 
 export enum MessageType {
     CATCH_USER_DATA, SET_TWITCH_USER_DATA, SET_USER_SETTINGS, IS_STARTED, GET_USER_DATA, STREAM_ENDED, CLEAR_DATA,
     PLAYER_CHANNEL_UPDATE, PLAY_STOP, PREVIOUS, NEXT, OPEN_STREAM, EXTRACT_TWITCH_USER, SET_SHOW_LOGIN_MESSAGE,
-    SHOULD_SHOW_LOGIN_MESSAGE, HAS_PREV_NEXT, GET_ERRORS, DISMISS_ERROR
+    SHOULD_SHOW_LOGIN_MESSAGE, HAS_PREV_NEXT, GET_ERRORS, DISMISS_ERROR, PAUSE_STREAM, GET_APP_DATA, LOG
 }
 
 const MESSAGE_PARAMETER_TYPES: Map<MessageType, string> = new Map<MessageType, string>([
@@ -26,7 +28,10 @@ const MESSAGE_PARAMETER_TYPES: Map<MessageType, string> = new Map<MessageType, s
     [MessageType.HAS_PREV_NEXT, "void"],
     [MessageType.CLEAR_DATA, "void"],
     [MessageType.GET_ERRORS, "void"],
-    [MessageType.DISMISS_ERROR, InfitwitchError.name]
+    [MessageType.DISMISS_ERROR, InfitwitchError.name],
+    [MessageType.PAUSE_STREAM, "void"],
+    [MessageType.GET_APP_DATA, "void"],
+    [MessageType.LOG, "Object"]
 ]);
 
 export interface Message {
@@ -45,13 +50,18 @@ export class Messenger {
         return this._tabId;
     }
 
+    public static logMessageInBackground(protocol, message) {
+        chrome.runtime.sendMessage({type: MessageType.LOG, data: {protocol: protocol, message: message}}, () => {});
+    }
+
     public static sendToBackground(message: Message, responseCallback?: (response: any) => void): void {
+        Messenger.logMessageInBackground('[BG][SEND]', message);
         Messenger.checkMessage(message);
         chrome.runtime.sendMessage(message, responseCallback ? responseCallback : () => {
         });
     }
 
-    private static checkMessage(message: Message) {
+    private static checkMessage(message: Message, protocol?: string) {
         if (undefined == message || undefined == message.type || undefined == message.data) {
             throw new Error("Null message passed");
         } else {
@@ -59,22 +69,48 @@ export class Messenger {
                 throw new Error("Wrong data type for " + MessageType[message.type] + ", got: " + message.data.constructor.name + " expected: " + MESSAGE_PARAMETER_TYPES.get(message.type));
             }
         }
+        if(protocol) {
+            Logger.logMessage(protocol, message);
+        }
     }
 
     public static sendToTab(message: Message, responseCallback?: (response: any) => void): void {
-        Messenger.checkMessage(message);
-        chrome.tabs.query({}, function (tabs: Tab[]) {
-            let tabExists: boolean = false;
-            for (let tab of tabs) {
-                if (tab.id == Messenger.tabId) {
-                    tabExists = true;
-                    break;
+        if (Messenger.tabId == undefined) {
+            Messenger.conjureTabAndSend(message, responseCallback);
+        } else {
+            chrome.tabs.query({}, function (tabs: Tab[]) {
+                // if tab exists, send message to it
+                for (let tab of tabs) {
+                    if (tab.id == Messenger.tabId) {
+                        Messenger._sendToTab(message, responseCallback);
+                        return;
+                    }
                 }
+
+                // if tab does not exist try to create a new one
+                Messenger.conjureTabAndSend(message, responseCallback);
+            });
+        }
+    }
+
+    private static conjureTabAndSend(message: Message, responseCallback?: (response: any) => void) {
+        Messenger.sendToBackground({type: MessageType.GET_APP_DATA, data: "void"}, (data: AppData) => {
+            let promise;
+            let firstRun = !!(data.flags & AppStateFlags.FirstRun);
+            if (data.currentStream !== undefined) {
+                promise = createTab(firstRun, data.currentStream.url);
+            } else {
+                promise = createTab(firstRun, "https://www.twitch.tv");
             }
-            if (tabExists) {
-                console.log("SEND:", MessageType[message.type], message.data);
-                chrome.tabs.sendMessage(Messenger.tabId, message, responseCallback);
-            }
+            promise.then((tab: Tab) => {
+                Messenger.tabId = tab.id;
+                Messenger._sendToTab(message, responseCallback);
+            })
         });
+    }
+
+    private static _sendToTab(message: Message, responseCallback?: (response: any) => void) {
+        Messenger.checkMessage(message, "[TAB][SEND]");
+        chrome.tabs.sendMessage(Messenger.tabId, message, responseCallback);
     }
 }

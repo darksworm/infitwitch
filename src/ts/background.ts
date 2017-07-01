@@ -4,6 +4,7 @@ import {Message, MessageType, Messenger} from "./utils/messaging";
 import {createTab, isEmptyObj} from "./utils/helpers";
 import {Api} from "./utils/api";
 import {InfitwitchError} from "./utils/infitwitcherror";
+import {Logger} from "./utils/logger";
 import Tab = chrome.tabs.Tab;
 
 let userData: UserData = new UserData();
@@ -14,14 +15,16 @@ let appData = new AppData();
 let errors: InfitwitchError[] = [];
 
 chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendResponse) {
-    console.log("GOT:", MessageType[msg.type], msg.data);
+    Logger.logMessage('[BG][RECV]', msg);
     switch (msg.type) {
         case MessageType.GET_ERRORS:
             sendResponse(errors);
             break;
+
         case MessageType.DISMISS_ERROR:
             sendResponse(dismissError(msg.data));
             break;
+
         case MessageType.SET_TWITCH_USER_DATA:
             onUserDataReceived(<TwitchUser> msg.data).then(() => handleReceivedData());
             break;
@@ -110,6 +113,14 @@ chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendRespons
             });
             break;
 
+        case MessageType.GET_APP_DATA:
+            sendResponse(appData);
+            break;
+
+        case MessageType.LOG:
+            Logger.logMessage(msg.data.protocol, msg.data.message);
+            break;
+
         default:
             throw new Error("Unimplemented message handler for message type: " + msg.type.toString());
     }
@@ -125,9 +136,9 @@ function onApiError(data: InfitwitchError) {
     chrome.browserAction.setBadgeText({text: errors.length.toString()});
 }
 
-function dismissError(error:InfitwitchError) {
-    for(let i in errors) {
-        if(errors[i].time == error.time){
+function dismissError(error: InfitwitchError) {
+    for (let i in errors) {
+        if (errors[i].time == error.time) {
             delete errors[i];
             chrome.browserAction.setBadgeText({text: errors.length ? errors.length.toString() : ""});
             return true;
@@ -160,7 +171,7 @@ function start() {
         if (userData.id) {
             // if we already have user data go straight to top priority stream
             getNextStream().then((stream: Stream) => {
-                createTab(!!(appData.flags & AppStateFlags.FirstRun), stream.url).then((tab: Tab) => {
+                getTab(stream.url).then((tab: Tab) => {
                     Messenger.tabId = tab.id;
                     appData.currentStream = stream;
                     Messenger.sendToTab({type: MessageType.OPEN_STREAM, data: stream});
@@ -168,7 +179,7 @@ function start() {
             });
         } else {
             // if there is no user data, open "/" on twitch so getTwitchUserData executes
-            createTab(!!(appData.flags & AppStateFlags.FirstRun)).then((tab: Tab) => {
+            getTab().then((tab: Tab) => {
                 Messenger.tabId = tab.id;
                 Messenger.sendToTab({type: MessageType.EXTRACT_TWITCH_USER, data: "void"});
             });
@@ -182,8 +193,15 @@ function start() {
     }
 }
 
+function getTab(url: string = "https://www.twitch.tv"): Promise<Tab> {
+    return createTab(!!(appData.flags & AppStateFlags.FirstRun), url)
+}
+
 function end() {
-    Messenger.tabId = undefined;
+    Messenger.sendToTab({
+        type: MessageType.PAUSE_STREAM,
+        data: "void"
+    });
     appData = new AppData();
 }
 

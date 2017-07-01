@@ -38,7 +38,7 @@ let tsLoader = {
 if (process.env.NODE_ENV !== 'dev') {
     tsLoader.use.push({
         // removes debug logging
-        loader: WebpackStrip.loader('console.log')
+        loader: WebpackStrip.loader('console.log', 'Logger.logMessage', 'Messenger.logMessageInBackground')
     });
 
     plugins.push(new BabiliPlugin({}, {}));

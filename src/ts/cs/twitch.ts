@@ -97,14 +97,19 @@ function getNextStream() {
 }
 
 chrome.runtime.onMessage.addListener(function (msg: Message, sender, sendResponse) {
+    Messenger.logMessageInBackground('[TAB][RECV]', msg);
     switch (msg.type) {
         case MessageType.OPEN_STREAM:
             currentStream = msg.data;
             addScript({textContent: 'window.App.__container__.lookup("router:main").transitionTo("/" + "' + msg.data.name + '" + "");'}, true);
+            addScript({textContent: 'window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.player").play()'}, true);
             getPlayer().then(() => openTheaterMode());
             break;
         case MessageType.EXTRACT_TWITCH_USER:
             getTwitchUserData();
+            break;
+        case MessageType.PAUSE_STREAM:
+            addScript({textContent: 'window.App.__container__.lookup("service:persistentPlayer").get("playerComponent.player").pause()'}, true);
             break;
     }
 });
